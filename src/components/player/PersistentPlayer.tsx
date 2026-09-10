@@ -66,7 +66,7 @@ export default function PersistentPlayer() {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-14 md:bottom-0 left-0 right-0 z-30 bg-[#0c0c14]/95 backdrop-blur-2xl border-t border-white/10 select-none shadow-2xl">
+    <div className="fixed bottom-[3.5rem] md:bottom-0 left-0 right-0 z-30 bg-[#0c0c14]/98 backdrop-blur-2xl border-t border-white/10 select-none shadow-2xl">
       {/* Interactive Top Progress Bar Accent */}
       <div className="relative w-full h-1 bg-white/10 group cursor-pointer">
         <div
@@ -85,12 +85,12 @@ export default function PersistentPlayer() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 flex items-center justify-between gap-2 sm:gap-4">
         {/* Track Metadata & Artwork */}
-        <div className="flex items-center gap-3 min-w-0 flex-1 sm:flex-initial sm:w-64">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 sm:flex-initial sm:w-64">
           <div
             onClick={() => setNowPlayingOpen(true)}
-            className="relative w-12 h-12 rounded-xl overflow-hidden shadow-lg group cursor-pointer shrink-0 bg-zinc-800 border border-white/10"
+            className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl overflow-hidden shadow-lg group cursor-pointer shrink-0 bg-zinc-800 border border-white/10"
           >
             <Image
               src={currentSong.artwork}
@@ -104,15 +104,15 @@ export default function PersistentPlayer() {
           </div>
 
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setNowPlayingOpen(true)}>
-            <h4 className="text-sm font-semibold text-white truncate hover:text-pink-300 transition-colors">
+            <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:text-pink-300 transition-colors">
               {currentSong.title}
             </h4>
-            <p className="text-xs text-zinc-400 truncate">{currentSong.artist}</p>
+            <p className="text-[11px] sm:text-xs text-zinc-400 truncate">{currentSong.artist}</p>
           </div>
 
           <button
             onClick={() => toggleFavorite(currentSong.id)}
-            className="p-1.5 rounded-full hover:bg-white/5 transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-white/5 transition-colors shrink-0"
             title="Favorite"
           >
             <Heart
@@ -124,13 +124,13 @@ export default function PersistentPlayer() {
           </button>
         </div>
 
-        {/* Center Controls (Desktop & Mobile) */}
-        <div className="flex flex-col items-center gap-1 flex-1 max-w-md">
-          <div className="flex items-center gap-3 sm:gap-5">
+        {/* Center Controls */}
+        <div className="flex flex-col items-center gap-1 shrink-0 sm:flex-1 sm:max-w-md">
+          <div className="flex items-center gap-1 sm:gap-4">
             <button
               onClick={toggleShuffle}
               className={cn(
-                "p-1.5 rounded-full transition-colors hidden sm:block",
+                "p-2 rounded-full transition-colors hidden sm:block",
                 shuffle ? "text-pink-400 bg-pink-500/10" : "text-zinc-400 hover:text-white"
               )}
               title="Shuffle"
@@ -140,36 +140,36 @@ export default function PersistentPlayer() {
 
             <button
               onClick={prevTrack}
-              className="p-1.5 text-zinc-300 hover:text-white transition-colors"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-300 hover:text-white transition-colors"
               title="Previous"
             >
-              <SkipBack className="w-5 h-5" />
+              <SkipBack className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <button
               onClick={togglePlay}
-              className="w-10 h-10 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/25 hover:scale-105 active:scale-95 transition-all"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-pink-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/25 hover:scale-105 active:scale-95 transition-all shrink-0"
               title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
-                <Pause className="w-5 h-5 fill-current" />
+                <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
               ) : (
-                <Play className="w-5 h-5 fill-current ml-0.5" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current ml-0.5" />
               )}
             </button>
 
             <button
               onClick={nextTrack}
-              className="p-1.5 text-zinc-300 hover:text-white transition-colors"
+              className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-300 hover:text-white transition-colors"
               title="Next"
             >
-              <SkipForward className="w-5 h-5" />
+              <SkipForward className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
 
             <button
               onClick={toggleRepeat}
               className={cn(
-                "p-1.5 rounded-full transition-colors hidden sm:block",
+                "p-2 rounded-full transition-colors hidden sm:block",
                 repeat !== "off" ? "text-pink-400 bg-pink-500/10" : "text-zinc-400 hover:text-white"
               )}
               title={`Repeat: ${repeat}`}
@@ -215,7 +215,7 @@ export default function PersistentPlayer() {
           </button>
 
           <div className="flex items-center gap-2">
-            <button onClick={toggleMute} className="text-zinc-400 hover:text-white transition-colors">
+            <button onClick={toggleMute} className="text-zinc-400 hover:text-white transition-colors p-1">
               {isMuted || volume === 0 ? (
                 <VolumeX className="w-4 h-4 text-red-400" />
               ) : (

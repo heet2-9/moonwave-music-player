@@ -6,13 +6,8 @@ import { useLibraryStore } from "@/store/libraryStore";
 import { usePlayerStore } from "@/store/playerStore";
 import {
   Settings,
-  Heart,
-  History,
-  Trash2,
-  Sparkles,
   Volume2,
-  ShieldCheck,
-  Info,
+  Sparkles,
   CheckCircle2,
 } from "lucide-react";
 
@@ -25,7 +20,6 @@ export default function SettingsPage() {
 
   const [audioQuality, setAudioQuality] = useState("High (320 kbps)");
   const [autoplay, setAutoplay] = useState(true);
-  const [accent, setAccent] = useState("Soft Pink / Violet");
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
   const handleResetData = () => {
@@ -37,40 +31,40 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-8 select-none max-w-4xl mx-auto pb-16">
+    <div className="space-y-6 sm:space-y-8 select-none max-w-4xl mx-auto pb-16">
       {/* Header */}
       <div className="border-b border-white/10 pb-4">
-        <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-          <Settings className="w-6 h-6 text-pink-400" />
+        <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-pink-400" />
           <span>Settings & Preferences</span>
         </h1>
-        <p className="text-xs text-zinc-400 mt-1">Configure audio quality, playback preferences, and privacy.</p>
+        <p className="text-xs text-zinc-400 mt-0.5">Configure audio quality, playback preferences, and privacy.</p>
       </div>
 
       {statusMsg && (
-        <div className="p-4 rounded-xl bg-pink-500/20 border border-pink-500/30 text-pink-200 text-xs flex items-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-pink-400" />
+        <div className="p-3.5 rounded-xl bg-pink-500/20 border border-pink-500/30 text-pink-200 text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-pink-400 shrink-0" />
           <span>{statusMsg}</span>
         </div>
       )}
 
       {/* Main Settings Sections */}
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Playback & Audio */}
-        <section className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider text-pink-400">
+        <section className="p-4 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+          <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider text-pink-400">
             Audio & Playback
           </h3>
 
-          <div className="flex items-center justify-between py-2 border-b border-white/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-white/5 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white">Audio Stream Quality</h4>
-              <p className="text-xs text-zinc-400">High fidelity streaming resolution</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-white">Audio Stream Quality</h4>
+              <p className="text-[11px] text-zinc-400">High fidelity streaming resolution</p>
             </div>
             <select
               value={audioQuality}
               onChange={(e) => setAudioQuality(e.target.value)}
-              className="bg-[#12121e] border border-white/10 rounded-lg text-xs font-medium text-white px-3 py-1.5 focus:outline-none"
+              className="bg-[#12121e] border border-white/10 rounded-lg text-xs font-medium text-white px-3 py-2 focus:outline-none min-h-[40px] self-start sm:self-auto"
             >
               <option value="High (320 kbps)">High (320 kbps)</option>
               <option value="Standard (192 kbps)">Standard (192 kbps)</option>
@@ -78,31 +72,31 @@ export default function SettingsPage() {
             </select>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-b border-white/5">
+          <div className="flex items-center justify-between py-2 border-b border-white/5 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white">Autoplay Next Track</h4>
-              <p className="text-xs text-zinc-400">Automatically play next song when current track ends</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-white">Autoplay Next Track</h4>
+              <p className="text-[11px] text-zinc-400">Automatically play next song when current track ends</p>
             </div>
             <button
               onClick={() => setAutoplay(!autoplay)}
-              className={`w-12 h-6 rounded-full transition-colors p-1 relative ${
+              className={`w-12 h-7 rounded-full transition-colors p-1 relative min-h-[28px] shrink-0 ${
                 autoplay ? "bg-pink-500" : "bg-white/10"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                  autoplay ? "translate-x-6" : "translate-x-0"
+                className={`w-5 h-5 rounded-full bg-white transition-transform ${
+                  autoplay ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
           </div>
 
-          <div className="flex items-center justify-between py-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white">Default Output Volume</h4>
-              <p className="text-xs text-zinc-400">Current level: {Math.round(volume * 100)}%</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-white">Default Output Volume</h4>
+              <p className="text-[11px] text-zinc-400">Current level: {Math.round(volume * 100)}%</p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-start sm:self-auto">
               <Volume2 className="w-4 h-4 text-zinc-400" />
               <input
                 type="range"
@@ -111,22 +105,22 @@ export default function SettingsPage() {
                 step={0.01}
                 value={volume}
                 onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="w-28 accent-pink-500 h-1 bg-white/10 rounded-lg cursor-pointer"
+                className="w-28 sm:w-32 accent-pink-500 h-1.5 bg-white/10 rounded-lg cursor-pointer"
               />
             </div>
           </div>
         </section>
 
         {/* Data & Storage */}
-        <section className="p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider text-purple-400">
+        <section className="p-4 sm:p-6 rounded-2xl bg-white/[0.02] border border-white/5 space-y-4">
+          <h3 className="text-xs sm:text-sm font-bold text-white uppercase tracking-wider text-purple-400">
             Data & Privacy Management
           </h3>
 
-          <div className="flex items-center justify-between py-2 border-b border-white/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-white/5 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white">Clear Favorites</h4>
-              <p className="text-xs text-zinc-400">Remove all tracks saved in favorites</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-white">Clear Favorites</h4>
+              <p className="text-[11px] text-zinc-400">Remove all tracks saved in favorites</p>
             </div>
             <button
               onClick={() => {
@@ -134,16 +128,16 @@ export default function SettingsPage() {
                 setStatusMsg("Favorites cleared.");
                 setTimeout(() => setStatusMsg(null), 3000);
               }}
-              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-zinc-300 transition-colors"
+              className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-zinc-300 transition-colors min-h-[40px] self-start sm:self-auto"
             >
               Clear Favorites
             </button>
           </div>
 
-          <div className="flex items-center justify-between py-2 border-b border-white/5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 border-b border-white/5 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white">Clear Listening History</h4>
-              <p className="text-xs text-zinc-400">Remove all recently played history logs</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-white">Clear Listening History</h4>
+              <p className="text-[11px] text-zinc-400">Remove all recently played history logs</p>
             </div>
             <button
               onClick={() => {
@@ -151,20 +145,20 @@ export default function SettingsPage() {
                 setStatusMsg("Listening history cleared.");
                 setTimeout(() => setStatusMsg(null), 3000);
               }}
-              className="px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-zinc-300 transition-colors"
+              className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-semibold text-zinc-300 transition-colors min-h-[40px] self-start sm:self-auto"
             >
               Clear History
             </button>
           </div>
 
-          <div className="flex items-center justify-between py-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between py-2 gap-2">
             <div>
-              <h4 className="text-sm font-semibold text-white text-red-300">Reset Local Storage</h4>
-              <p className="text-xs text-zinc-400">Reset all app preferences, playlists, and cached states</p>
+              <h4 className="text-xs sm:text-sm font-semibold text-red-300">Reset Local Storage</h4>
+              <p className="text-[11px] text-zinc-400">Reset all app preferences, playlists, and cached states</p>
             </div>
             <button
               onClick={handleResetData}
-              className="px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold text-red-300 border border-red-500/30 transition-colors"
+              className="px-4 py-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-xs font-semibold text-red-300 border border-red-500/30 transition-colors min-h-[40px] self-start sm:self-auto"
             >
               Reset All
             </button>
@@ -172,15 +166,15 @@ export default function SettingsPage() {
         </section>
 
         {/* Personal Note Card */}
-        <section className="p-6 rounded-2xl bg-gradient-to-r from-pink-950/30 via-purple-950/20 to-indigo-950/30 border border-pink-500/30 space-y-3 relative overflow-hidden shadow-xl">
+        <section className="p-4 sm:p-6 rounded-2xl bg-gradient-to-r from-pink-950/30 via-purple-950/20 to-indigo-950/30 border border-pink-500/30 space-y-2.5 relative overflow-hidden shadow-xl">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-pink-400" />
-            <h3 className="text-base font-bold text-white">{siteConfig.personalNote.title}</h3>
+            <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-pink-400 shrink-0" />
+            <h3 className="text-sm sm:text-base font-bold text-white">{siteConfig.personalNote.title}</h3>
           </div>
           <p className="text-xs text-zinc-300 leading-relaxed max-w-xl">
             {siteConfig.personalNote.content}
           </p>
-          <div className="pt-2 text-[11px] text-pink-400/80 font-medium">
+          <div className="pt-1 text-[10px] sm:text-[11px] text-pink-400/80 font-medium">
             {siteConfig.appName} • Version 1.0.0 • Designed for {siteConfig.girlfriendName}
           </div>
         </section>

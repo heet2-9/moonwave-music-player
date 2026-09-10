@@ -58,18 +58,18 @@ function PlaylistsContent() {
   return (
     <div className="space-y-6 select-none pb-12">
       {/* Page Title & Create Action */}
-      <div className="flex items-center justify-between border-b border-white/10 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <ListMusic className="w-6 h-6 text-purple-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
+            <ListMusic className="w-5 h-5 sm:w-6 sm:h-6 text-purple-400" />
             <span>Playlists</span>
           </h1>
-          <p className="text-xs text-zinc-400 mt-1">Organize your favorite music into custom playlists.</p>
+          <p className="text-xs text-zinc-400 mt-0.5">Organize your favorite music into custom playlists.</p>
         </div>
 
         <button
           onClick={handleCreate}
-          className="flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs shadow-lg shadow-pink-500/25 transition-all"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs shadow-lg shadow-pink-500/25 transition-all min-h-[44px] self-start sm:self-auto"
         >
           <PlusCircle className="w-4 h-4" />
           <span>New Playlist</span>
@@ -82,14 +82,14 @@ function PlaylistsContent() {
           <p className="text-base font-semibold text-zinc-300">Create your first playlist.</p>
           <button
             onClick={handleCreate}
-            className="px-4 py-2 rounded-full bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition-all"
+            className="px-4 py-2.5 rounded-full bg-white/10 text-white text-xs font-semibold hover:bg-white/20 transition-all min-h-[44px]"
           >
             Create Playlist
           </button>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left Column: Playlist Cards Selector */}
+          {/* Playlist Cards Selector */}
           <div className="space-y-2">
             {customPlaylists.map((pl) => {
               const isSelected = activePlaylist?.id === pl.id;
@@ -97,13 +97,13 @@ function PlaylistsContent() {
                 <div
                   key={pl.id}
                   onClick={() => setActivePlaylistId(pl.id)}
-                  className={`p-3 rounded-xl cursor-pointer transition-all border flex items-center justify-between ${
+                  className={`p-3 rounded-xl cursor-pointer transition-all border flex items-center justify-between min-h-[52px] ${
                     isSelected
                       ? "bg-gradient-to-r from-purple-500/20 to-pink-500/15 border-pink-500/40 text-white shadow-md"
                       : "bg-white/[0.02] border-white/5 hover:bg-white/5 text-zinc-300"
                   }`}
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
                     <div className="w-10 h-10 rounded-lg bg-zinc-800 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden relative">
                       {pl.coverArtwork ? (
                         <Image src={pl.coverArtwork} alt={pl.name} fill className="object-cover" />
@@ -111,19 +111,19 @@ function PlaylistsContent() {
                         <Music className="w-5 h-5 text-purple-400" />
                       )}
                     </div>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h4 className="text-xs font-bold truncate">{pl.name}</h4>
                       <p className="text-[11px] text-zinc-400">{pl.songIds.length} tracks</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 opacity-80 hover:opacity-100">
+                  <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleRename(pl.id, pl.name);
                       }}
-                      className="p-1 text-zinc-400 hover:text-white"
+                      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-white"
                       title="Rename"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -135,7 +135,7 @@ function PlaylistsContent() {
                           deletePlaylist(pl.id);
                         }
                       }}
-                      className="p-1 text-zinc-400 hover:text-red-400"
+                      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-zinc-400 hover:text-red-400"
                       title="Delete"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -146,20 +146,20 @@ function PlaylistsContent() {
             })}
           </div>
 
-          {/* Right Column: Songs in Active Playlist */}
-          <div className="md:col-span-2 space-y-4 bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+          {/* Songs in Active Playlist */}
+          <div className="md:col-span-2 space-y-4 bg-white/[0.02] border border-white/5 p-3.5 sm:p-4 rounded-2xl">
             {activePlaylist && (
               <>
-                <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                  <div>
-                    <h3 className="text-lg font-bold text-white">{activePlaylist.name}</h3>
-                    <p className="text-xs text-zinc-400">{activePlaylist.description || `${activeSongs.length} songs`}</p>
+                <div className="flex items-center justify-between border-b border-white/10 pb-3 gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-bold text-white truncate">{activePlaylist.name}</h3>
+                    <p className="text-xs text-zinc-400 truncate">{activePlaylist.description || `${activeSongs.length} songs`}</p>
                   </div>
 
                   {activeSongs.length > 0 && (
                     <button
                       onClick={handlePlayPlaylist}
-                      className="flex items-center gap-2 px-4 py-2 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs shadow-lg shadow-pink-500/25 transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-pink-500 hover:bg-pink-400 text-white font-bold text-xs shadow-lg shadow-pink-500/25 transition-all min-h-[44px] shrink-0"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Play Playlist</span>

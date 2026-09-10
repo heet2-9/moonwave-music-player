@@ -63,15 +63,15 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
     <div
       onClick={handleRowClick}
       className={cn(
-        "group flex items-center justify-between p-2.5 rounded-xl transition-all duration-200 cursor-pointer select-none border border-transparent",
+        "group flex items-center justify-between p-2 sm:p-2.5 rounded-xl transition-all duration-200 cursor-pointer select-none border border-transparent min-h-[52px]",
         isCurrent
           ? "bg-pink-500/10 border-pink-500/30 text-white font-medium"
           : "hover:bg-white/5 text-zinc-300 hover:text-white"
       )}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 pr-2">
         {index !== undefined && (
-          <span className="w-5 text-center text-xs font-semibold text-zinc-500 group-hover:text-pink-400">
+          <span className="w-4 text-center text-xs font-semibold text-zinc-500 group-hover:text-pink-400 shrink-0 hidden sm:inline">
             {isCurrent && isPlaying ? (
               <span className="text-pink-400 font-bold animate-pulse">▶</span>
             ) : (
@@ -80,7 +80,7 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
           </span>
         )}
 
-        <div className="relative w-11 h-11 rounded-lg overflow-hidden shrink-0 bg-zinc-800 border border-white/5">
+        <div className="relative w-10 h-10 sm:w-11 sm:h-11 rounded-lg overflow-hidden shrink-0 bg-zinc-800 border border-white/5">
           <Image src={song.artwork} alt={song.title} fill className="object-cover" />
           <div
             className={cn(
@@ -100,16 +100,16 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
           <h4
             className={cn(
               "text-xs sm:text-sm font-semibold truncate",
-              isCurrent ? "text-pink-300" : "text-white"
+              isCurrent ? "text-pink-300 font-bold" : "text-white"
             )}
           >
             {song.title}
           </h4>
-          <p className="text-[11px] text-zinc-400 truncate">{song.artist} • {song.album}</p>
+          <p className="text-[11px] text-zinc-400 truncate">{song.artist}</p>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0 ml-2">
+      <div className="flex items-center gap-1 sm:gap-2 shrink-0">
         {song.karaokeVideoId && (
           <Link
             href={`/karaoke?songId=${song.id}`}
@@ -123,7 +123,7 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
 
         <button
           onClick={handleAddToPlaylist}
-          className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors"
+          className="p-2 rounded-full hover:bg-white/10 text-zinc-400 hover:text-white transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
           title="Add to Playlist"
         >
           <Plus className="w-4 h-4" />
@@ -134,7 +134,7 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
             e.stopPropagation();
             toggleFavorite(song.id);
           }}
-          className="p-1.5 rounded-full hover:bg-white/10 transition-colors"
+          className="p-2 rounded-full hover:bg-white/10 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center"
           title="Favorite"
         >
           <Heart
@@ -145,7 +145,7 @@ export default function SongRow({ song, index, playlistContext }: SongRowProps) 
           />
         </button>
 
-        <span className="text-xs text-zinc-500 font-medium w-10 text-right">
+        <span className="text-[11px] sm:text-xs text-zinc-500 font-medium w-8 sm:w-10 text-right shrink-0">
           {formatDuration(song.duration)}
         </span>
       </div>

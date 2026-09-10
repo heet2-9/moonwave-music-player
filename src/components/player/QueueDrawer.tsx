@@ -18,9 +18,9 @@ export default function QueueDrawer() {
   if (!isQueueOpen) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0c0c14]/95 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 select-none">
+    <div className="fixed inset-y-0 right-0 z-50 w-full sm:w-96 bg-[#0c0c14]/98 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col animate-in slide-in-from-right duration-300 select-none pt-safe pb-safe">
       {/* Drawer Header */}
-      <div className="p-5 border-b border-white/10 flex items-center justify-between">
+      <div className="p-4 sm:p-5 border-b border-white/10 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
           <h3 className="font-bold text-white text-base">Up Next</h3>
           <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">
@@ -31,14 +31,14 @@ export default function QueueDrawer() {
           {queue.length > 0 && (
             <button
               onClick={clearQueue}
-              className="text-xs text-zinc-400 hover:text-red-400 transition-colors px-2 py-1 rounded bg-white/5"
+              className="text-xs text-zinc-400 hover:text-red-400 transition-colors px-2 py-1.5 rounded bg-white/5 min-h-[36px]"
             >
               Clear
             </button>
           )}
           <button
             onClick={() => setQueueOpen(false)}
-            className="p-1.5 rounded-full bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-zinc-300 transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -46,7 +46,7 @@ export default function QueueDrawer() {
       </div>
 
       {/* Queue List */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 custom-scrollbar">
         {queue.length === 0 ? (
           <div className="py-20 text-center text-zinc-500">
             <p className="text-sm">Queue is empty</p>
@@ -88,11 +88,11 @@ export default function QueueDrawer() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1">
                   {!isCurrent && (
                     <button
                       onClick={() => playSong(song, queue)}
-                      className="p-1.5 rounded-full hover:bg-white/10 text-pink-400"
+                      className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full hover:bg-white/10 text-pink-400"
                       title="Play"
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
@@ -100,7 +100,7 @@ export default function QueueDrawer() {
                   )}
                   <button
                     onClick={() => removeFromQueue(idx)}
-                    className="p-1.5 rounded-full hover:bg-white/10 text-zinc-400 hover:text-red-400"
+                    className="p-2 min-h-[36px] min-w-[36px] flex items-center justify-center rounded-full hover:bg-white/10 text-zinc-400 hover:text-red-400"
                     title="Remove"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
