@@ -1,0 +1,26 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import AppLayout from "@/components/layout/AppLayout";
+import { siteConfig } from "@/config/site";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+
+export const metadata: Metadata = {
+  title: `${siteConfig.appName} — Private Music Space for ${siteConfig.girlfriendName}`,
+  description: "A private music player, lyrics viewer, and karaoke studio.",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="dark scroll-smooth">
+      <body className={`${inter.variable} bg-[#09090e] text-zinc-100 antialiased font-sans`}>
+        <AppLayout>{children}</AppLayout>
+      </body>
+    </html>
+  );
+}
