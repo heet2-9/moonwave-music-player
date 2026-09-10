@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useKaraokeStore } from "@/store/karaokeStore";
+import { usePlayerStore } from "@/store/playerStore";
 import { KaraokeSong } from "@/data/karaokeSongs";
 import { Mic, Square, AlertCircle, Radio, Info, Volume2, Sliders, Headphones, AlertTriangle } from "lucide-react";
 
@@ -20,9 +21,10 @@ export default function KaraokeMixerRecorder({
   onPauseVideo,
   onSeekVideo,
 }: KaraokeMixerRecorderProps) {
-  // Stable Audio Graph Refs to prevent React StrictMode duplicate initializations
+  // Stable Audio Graph Refs to prevent duplicate node creation across re-renders
   const audioCtxRef = useRef<AudioContext | null>(null);
   const videoSourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+  const videoSourceElementRef = useRef<HTMLVideoElement | null>(null);
   const micSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
 
@@ -30,7 +32,6 @@ export default function KaraokeMixerRecorder({
   const micGainNodeRef = useRef<GainNode | null>(null);
   const mixerGainNodeRef = useRef<GainNode | null>(null);
   const masterGainNodeRef = useRef<GainNode | null>(null);
-  const monitorGainNodeRef = useRef<GainNode | null>(null);
   const destinationNodeRef = useRef<MediaStreamAudioDestinationNode | null>(null);
   const micAnalyserRef = useRef<AnalyserNode | null>(null);
 
@@ -82,8 +83,8 @@ export default function KaraokeMixerRecorder({
     }
   }, [karaokeGainLevel]);
 
-  // Clean Web Audio Node Teardown
-  const teardownAudioNodes = useCallback(() => {
+  // Clean Microphone Stream & Audio Node Teardown
+  const stopMicrophone = useCallback(() => {
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
@@ -94,7 +95,12 @@ export default function KaraokeMixerRecorder({
     }
 
     if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach((track) => track.stop());
+      micStreamRef.current.getTracks().forEach((track) => {
+        try {
+          track.stop();
+          console.log("[MOONWAVE] Stopped microphone track:", track.label);
+        } catch (e) {}
+      });
       micStreamRef.current = null;
     }
 
@@ -107,14 +113,14 @@ export default function KaraokeMixerRecorder({
     setMicConnected(false);
     setMicLevel(0);
     setShowLowInputWarning(false);
-    console.log("[MOONWAVE] Audio nodes and microphone stream cleaned up.");
+    console.log("[MOONWAVE] Microphone hardware stream completely stopped.");
   }, []);
 
   useEffect(() => {
     return () => {
-      teardownAudioNodes();
+      stopMicrophone();
     };
-  }, [teardownAudioNodes]);
+  }, [stopMicrophone]);
 
   // Supported MIME Type Auto-Detection Priority
   const getSupportedMimeType = (): string => {
@@ -131,7 +137,7 @@ export default function KaraokeMixerRecorder({
     return "";
   };
 
-  // Setup Web Audio Master Graph
+  // Setup Web Audio Master Graph - Guaranteed EXACTLY ONE Path per Source
   const setupWebAudioGraph = (micStream: MediaStream) => {
     const videoElement = getVideoElement();
     if (!videoElement) {
@@ -144,10 +150,14 @@ export default function KaraokeMixerRecorder({
     }
     const audioCtx = audioCtxRef.current;
 
-    // Idempotent MediaElementAudioSourceNode creation per video element
-    if (!videoSourceRef.current) {
+    // Reuse or create MediaElementAudioSourceNode for HTML5 Video Element
+    if (!videoSourceRef.current || videoSourceElementRef.current !== videoElement) {
       try {
+        if (videoSourceRef.current) {
+          try { videoSourceRef.current.disconnect(); } catch (e) {}
+        }
         videoSourceRef.current = audioCtx.createMediaElementSource(videoElement);
+        videoSourceElementRef.current = videoElement;
         console.log("[MOONWAVE] MediaElementAudioSourceNode created for local video.");
       } catch (e) {
         console.warn("[MOONWAVE] Video element already connected to audio node:", e);
@@ -160,7 +170,7 @@ export default function KaraokeMixerRecorder({
     }
     micSourceRef.current = audioCtx.createMediaStreamSource(micStream);
 
-    // Create Gain & Mixer Nodes
+    // Create Audio Nodes if not already created
     if (!karaokeGainNodeRef.current) {
       karaokeGainNodeRef.current = audioCtx.createGain();
     }
@@ -172,9 +182,6 @@ export default function KaraokeMixerRecorder({
     }
     if (!masterGainNodeRef.current) {
       masterGainNodeRef.current = audioCtx.createGain();
-    }
-    if (!monitorGainNodeRef.current) {
-      monitorGainNodeRef.current = audioCtx.createGain();
     }
     if (!destinationNodeRef.current) {
       destinationNodeRef.current = audioCtx.createMediaStreamDestination();
@@ -188,7 +195,6 @@ export default function KaraokeMixerRecorder({
     const micGain = micGainNodeRef.current;
     const mixerGain = mixerGainNodeRef.current;
     const masterGain = masterGainNodeRef.current;
-    const monitorGain = monitorGainNodeRef.current;
     const destination = destinationNodeRef.current;
     const micAnalyser = micAnalyserRef.current;
 
@@ -197,40 +203,49 @@ export default function KaraokeMixerRecorder({
     micGain.gain.setValueAtTime(micGainLevel, audioCtx.currentTime);
     mixerGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
     masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
-    monitorGain.gain.setValueAtTime(1.0, audioCtx.currentTime); // Monitors video + mic to speakers
 
-    // Optional 80Hz High-Pass Filter for clean voice
+    // Optional 80Hz High-Pass Filter for clean voice input
     const highpass = audioCtx.createBiquadFilter();
     highpass.type = "highpass";
     highpass.frequency.setValueAtTime(80, audioCtx.currentTime);
 
-    // Build Graph Pipeline:
-    // Video -> Karaoke Gain ----------------> Mixer Gain -> Master Gain -> Destination (MediaRecorder)
-    // Mic -> Highpass -> Mic Gain -> Analyser -> Mixer Gain                    ↓
-    //                                                                  Monitor Gain -> AudioContext.destination
+    /* 
+      EXACT AUDIO GRAPH ROUTING ARCHITECTURE (NO DUPLICATE PATHS / NO VOICE ECHO):
+
+      HTML5 Video ---> MediaElementSource ---> karaokeGain ──┬─> audioCtx.destination (Speakers - user hears karaoke)
+                                                             └─> mixerGain ──> masterGain ──> destination (MediaRecorder)
+                                                                      ▲
+      Microphone Stream ---> MediaStreamSource ---> highpass ---> micGain ──┼─> micAnalyser (Meter UI ONLY)
+                                                                      │
+                                                                      (Mic NEVER routes to speakers!)
+    */
+
+    // 1. Karaoke Video Audio Routing
     if (videoSourceRef.current) {
       videoSourceRef.current.disconnect();
       videoSourceRef.current.connect(karaokeGain);
     }
-
     karaokeGain.disconnect();
-    karaokeGain.connect(mixerGain);
+    karaokeGain.connect(audioCtx.destination); // Route karaoke music to user speakers
+    karaokeGain.connect(mixerGain);            // Route karaoke music to recording mixer
 
+    // 2. Microphone Audio Routing
     micSourceRef.current.disconnect();
     micSourceRef.current.connect(highpass);
     highpass.connect(micGain);
-    micGain.connect(micAnalyser);
-    micGain.connect(mixerGain);
 
+    micGain.disconnect();
+    micGain.connect(micAnalyser); // Connect to level meter (NOT speakers)
+    micGain.connect(mixerGain);    // Connect to recording mixer (NOT speakers)
+
+    // 3. Master Recording Mixer Routing
     mixerGain.disconnect();
     mixerGain.connect(masterGain);
 
     masterGain.disconnect();
-    masterGain.connect(destination); // Connect to MediaRecorder MediaStreamDestination
-    masterGain.connect(monitorGain);
-    monitorGain.connect(audioCtx.destination); // Speaker output (avoids double audio!)
+    masterGain.connect(destination); // Connect ONLY to MediaStreamDestination for MediaRecorder
 
-    console.log("[MOONWAVE] Web Audio mixer graph constructed successfully.");
+    console.log("[MOONWAVE] Web Audio graph constructed cleanly (Zero Mic Speaker Monitoring).");
     return { audioCtx, destination, micAnalyser, karaokeGain };
   };
 
@@ -248,14 +263,12 @@ export default function KaraokeMixerRecorder({
       const levelPercent = Math.min(100, Math.round((avg / 255) * 100 * 2.8));
       setMicLevel(levelPercent);
 
-      // Voice Ducking Logic (reduce karaoke volume slightly when singing)
+      // Voice Ducking Logic (reduce karaoke volume slightly when user sings)
       if (audioCtxRef.current && enableDucking) {
         const now = audioCtxRef.current.currentTime;
         if (levelPercent > 12) {
-          // Voice active -> duck karaoke volume gently to 70% of set gain
           karaokeGain.gain.setTargetAtTime(karaokeGainLevel * 0.7, now, 0.1);
         } else {
-          // Voice quiet -> smoothly restore full karaoke gain
           karaokeGain.gain.setTargetAtTime(karaokeGainLevel, now, 0.2);
         }
       }
@@ -278,7 +291,7 @@ export default function KaraokeMixerRecorder({
     updateMeter();
   };
 
-  // Step 4: Enable Microphone Action
+  // Enable Microphone Action
   const enableMicrophone = async () => {
     setErrorMessage(null);
     setStatus("requesting_mic");
@@ -290,6 +303,9 @@ export default function KaraokeMixerRecorder({
     }
 
     try {
+      // Pause any active background music player song
+      usePlayerStore.getState().setIsPlaying(false);
+
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -322,8 +338,13 @@ export default function KaraokeMixerRecorder({
     }
   };
 
-  // Step 6: Start Recording Action
+  // Start Recording Action
   const startRecording = async () => {
+    if (status === "recording" || status === "processing") return;
+
+    // Pause any active background music player song
+    usePlayerStore.getState().setIsPlaying(false);
+
     if (!micStreamRef.current) {
       await enableMicrophone();
     }
@@ -365,12 +386,16 @@ export default function KaraokeMixerRecorder({
         if (finalBlob.size === 0) {
           setErrorMessage("The recording appears to be empty (0 bytes). Please try again.");
           setStatus("error");
+          stopMicrophone();
           return;
         }
 
         const recordingUrl = URL.createObjectURL(finalBlob);
         setRecordedBlob(finalBlob, recordingUrl);
         setStatus("completed");
+
+        // Immediately stop microphone hardware stream when recording finishes
+        stopMicrophone();
       };
 
       // 1. Seek video to start (0s)
@@ -393,11 +418,13 @@ export default function KaraokeMixerRecorder({
       console.error("[MOONWAVE] Start recording exception:", err);
       setErrorMessage(err.message || "Failed to start karaoke recording.");
       setStatus("error");
+      stopMicrophone();
     }
   };
 
-  // Step 9: Stop Recording Action
+  // Stop Recording Action
   const stopRecording = () => {
+    if (status !== "recording") return;
     setStatus("processing");
     onPauseVideo();
 
@@ -411,7 +438,10 @@ export default function KaraokeMixerRecorder({
         recorderRef.current.stop();
       } catch (e) {
         console.warn("Error stopping recorder:", e);
+        stopMicrophone();
       }
+    } else {
+      stopMicrophone();
     }
   };
 

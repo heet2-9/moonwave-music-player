@@ -6,12 +6,8 @@ import { siteConfig } from "@/config/site";
 import { useLibraryStore } from "@/store/libraryStore";
 import {
   Home,
-  Music2,
-  Heart,
   ListMusic,
   Mic2,
-  History,
-  Settings,
   PlusCircle,
   Sparkles,
 } from "lucide-react";
@@ -21,12 +17,8 @@ import { cn } from "@/lib/utils";
 export function navItems() {
   return [
     { label: "Home", href: "/", icon: Home },
-    { label: "Library", href: "/library", icon: Music2 },
-    { label: "Favorites", href: "/favorites", icon: Heart },
-    { label: "Playlists", href: "/playlists", icon: ListMusic },
+    { label: "Playlist", href: "/playlists", icon: ListMusic },
     { label: "Karaoke", href: "/karaoke", icon: Mic2, badge: "Studio" },
-    { label: "Recently Played", href: "/recently-played", icon: History },
-    { label: "Settings", href: "/settings", icon: Settings },
   ];
 }
 

@@ -6,12 +6,10 @@ import { initialSongs } from "@/data/songs";
 import { useLibraryStore } from "@/store/libraryStore";
 import { usePlayerStore } from "@/store/playerStore";
 import SongCard from "@/components/music/SongCard";
-import SongRow from "@/components/music/SongRow";
-import { Sparkles, Mic2, Heart, Music, Flame, Play } from "lucide-react";
+import { Sparkles, Mic2, Music, Flame, Play } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
-  const favorites = useLibraryStore((state) => state.favorites);
   const recentlyPlayed = useLibraryStore((state) => state.recentlyPlayed);
   const playSong = usePlayerStore((state) => state.playSong);
 
@@ -21,10 +19,6 @@ export default function Home() {
       .filter((s): s is typeof initialSongs[0] => s !== undefined)
       .slice(0, 4);
   }, [recentlyPlayed]);
-
-  const favoriteSongs = useMemo(() => {
-    return initialSongs.filter((s) => favorites.includes(s.id));
-  }, [favorites]);
 
   const karaokePicks = useMemo(() => {
     return initialSongs.filter((s) => s.karaokeVideoId);
@@ -84,8 +78,8 @@ export default function Home() {
               <Flame className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
               <span>Continue Listening</span>
             </h2>
-            <Link href="/recently-played" className="text-xs text-pink-400 font-semibold hover:underline">
-              View All
+            <Link href="/playlists" className="text-xs text-pink-400 font-semibold hover:underline">
+              Explore Playlists
             </Link>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
@@ -116,35 +110,15 @@ export default function Home() {
         </section>
       )}
 
-      {/* Your Favorites Preview */}
-      {favoriteSongs.length > 0 && (
-        <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <Heart className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500 fill-pink-500" />
-              <span>Your Favorites</span>
-            </h2>
-            <Link href="/favorites" className="text-xs text-pink-400 font-semibold hover:underline">
-              See All ({favoriteSongs.length})
-            </Link>
-          </div>
-          <div className="space-y-1">
-            {favoriteSongs.slice(0, 3).map((song, idx) => (
-              <SongRow key={`fav-row-${song.id}`} song={song} index={idx} playlistContext={favoriteSongs} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* All Songs Library Section */}
+      {/* All Songs Catalog Section */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
             <Music className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
             <span>All Songs Catalog</span>
           </h2>
-          <Link href="/library" className="text-xs text-pink-400 font-semibold hover:underline">
-            Explore Library
+          <Link href="/playlists" className="text-xs text-pink-400 font-semibold hover:underline">
+            Open Playlist
           </Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">

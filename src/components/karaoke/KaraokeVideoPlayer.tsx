@@ -5,6 +5,8 @@ import { KaraokeSong } from "@/data/karaokeSongs";
 import { Play, Pause, Volume2, VolumeX, Maximize, RotateCcw } from "lucide-react";
 import Image from "next/image";
 
+import { usePlayerStore } from "@/store/playerStore";
+
 interface KaraokeVideoPlayerProps {
   song: KaraokeSong;
   onVideoEnd?: () => void;
@@ -32,6 +34,7 @@ const KaraokeVideoPlayer = forwardRef<KaraokeVideoPlayerRef, KaraokeVideoPlayerP
       play: async () => {
         if (videoRef.current) {
           try {
+            usePlayerStore.getState().setIsPlaying(false);
             await videoRef.current.play();
             setIsPlaying(true);
           } catch (e) {
@@ -70,6 +73,7 @@ const KaraokeVideoPlayer = forwardRef<KaraokeVideoPlayerRef, KaraokeVideoPlayerP
         video.pause();
         setIsPlaying(false);
       } else {
+        usePlayerStore.getState().setIsPlaying(false);
         video.play().then(() => setIsPlaying(true)).catch((err) => {
           console.warn("[MOONWAVE] Play error:", err);
           setVideoError("Click to play karaoke video.");

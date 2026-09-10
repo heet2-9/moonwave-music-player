@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Music2, Heart, Mic2, Search } from "lucide-react";
+import { Home, ListMusic, Mic2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function BottomNav() {
@@ -10,9 +10,7 @@ export default function BottomNav() {
 
   const items = [
     { label: "Home", href: "/", icon: Home },
-    { label: "Search", href: "/search", icon: Search },
-    { label: "Library", href: "/library", icon: Music2 },
-    { label: "Favorites", href: "/favorites", icon: Heart },
+    { label: "Playlist", href: "/playlists", icon: ListMusic },
     { label: "Karaoke", href: "/karaoke", icon: Mic2, badge: true },
   ];
 
