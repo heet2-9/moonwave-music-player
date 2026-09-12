@@ -140,7 +140,6 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
             store.setIsJoined(true);
             store.setConnectionState("Connected");
             store.setSubscriptionStatus("SUBSCRIBED");
-            store.setLastReceivedEvent({ type: "ROOM_STATE", timestamp: Date.now(), payload });
             activeChannel = channel;
             subscribeToChannelEvents(channel);
             applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
@@ -156,7 +155,6 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
             store.setIsJoined(true);
             store.setConnectionState("Connected");
             store.setSubscriptionStatus("SUBSCRIBED");
-            store.setLastReceivedEvent({ type: "PLAYBACK_STATE", timestamp: Date.now(), payload });
             activeChannel = channel;
             subscribeToChannelEvents(channel);
             applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
@@ -178,7 +176,6 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
               event: "REQUEST_ROOM_STATE",
               payload: { guestId: store.participantId, timestamp: now },
             });
-            store.setLastSentEvent({ type: "REQUEST_ROOM_STATE", timestamp: now });
           } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
             store.setSubscriptionStatus("ERROR");
           }
@@ -356,9 +353,6 @@ export function setSharedControls(enabled: boolean): void {
 }
 
 function broadcastEvent(event: string, payload: Record<string, unknown>) {
-  const store = useTogetherStore.getState();
-  store.setLastSentEvent({ type: event, timestamp: Date.now(), payload });
-
   const supabase = getSupabaseClient();
   if (supabase && activeChannel) {
     activeChannel.send({
@@ -439,7 +433,6 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
   channel
     .on("broadcast", { event: "PLAYBACK_STATE" }, ({ payload }) => {
       if (!payload || !payload.room) return;
-      store.setLastReceivedEvent({ type: "PLAYBACK_STATE", timestamp: Date.now(), payload });
       const incomingRoom = payload.room as TogetherRoom;
       const currentRoom = store.room;
 
@@ -450,45 +443,38 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
     })
     .on("broadcast", { event: "ROOM_STATE" }, ({ payload }) => {
       if (!payload || !payload.room) return;
-      store.setLastReceivedEvent({ type: "ROOM_STATE", timestamp: Date.now(), payload });
       const incomingRoom = payload.room as TogetherRoom;
       store.setRoom(incomingRoom);
       applyRemotePlaybackToPlayer(incomingRoom, payload.timestamp || Date.now());
     })
     .on("broadcast", { event: "REACTION" }, ({ payload }) => {
       if (payload && payload.emoji) {
-        store.setLastReceivedEvent({ type: "REACTION", timestamp: Date.now(), payload });
         store.addReaction({ emoji: payload.emoji, sender: payload.sender || "Partner" });
       }
     })
     .on("broadcast", { event: "CONTROLS_TOGGLE" }, ({ payload }) => {
       if (payload && payload.sharedControls !== undefined) {
-        store.setLastReceivedEvent({ type: "CONTROLS_TOGGLE", timestamp: Date.now(), payload });
         store.setSharedControls(payload.sharedControls);
       }
     })
     .on("broadcast", { event: "HOST_LEAVING" }, () => {
       if (!store.isHost) {
-        store.setLastReceivedEvent({ type: "HOST_LEAVING", timestamp: Date.now() });
         store.setIsHost(true);
         store.setRole("host");
       }
     })
     .on("broadcast", { event: "CHAT_MESSAGE" }, ({ payload }) => {
       if (payload) {
-        store.setLastReceivedEvent({ type: "CHAT_MESSAGE", timestamp: Date.now(), payload });
         handleIncomingChatMessage(payload);
       }
     })
     .on("broadcast", { event: "CHAT_TYPING" }, ({ payload }) => {
       if (payload) {
-        store.setLastReceivedEvent({ type: "CHAT_TYPING", timestamp: Date.now(), payload });
         handleIncomingTypingEvent(payload);
       }
     })
     .on("broadcast", { event: "CHAT_SEEN" }, ({ payload }) => {
       if (payload) {
-        store.setLastReceivedEvent({ type: "CHAT_SEEN", timestamp: Date.now(), payload });
         handleIncomingSeenEvent(payload);
       }
     });

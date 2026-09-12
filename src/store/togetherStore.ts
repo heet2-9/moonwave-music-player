@@ -30,12 +30,6 @@ export interface FloatingReaction {
   timestamp: number;
 }
 
-export interface DebugEventLog {
-  type: string;
-  timestamp: number;
-  payload?: Record<string, unknown>;
-}
-
 interface TogetherStoreState {
   room: TogetherRoom | null;
   roomCode: string | null;
@@ -55,9 +49,6 @@ interface TogetherStoreState {
   error: string | null;
   isApplyingRemoteState: boolean;
   presenceCount: number;
-  lastSentEvent: DebugEventLog | null;
-  lastReceivedEvent: DebugEventLog | null;
-  isDebugOpen: boolean;
 
   // Actions
   setRoom: (room: TogetherRoom | null) => void;
@@ -77,9 +68,6 @@ interface TogetherStoreState {
   setError: (error: string | null) => void;
   setIsApplyingRemoteState: (applying: boolean) => void;
   setPresenceCount: (count: number) => void;
-  setLastSentEvent: (event: DebugEventLog) => void;
-  setLastReceivedEvent: (event: DebugEventLog) => void;
-  toggleDebugOpen: () => void;
   resetTogetherState: () => void;
 }
 
@@ -112,9 +100,6 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
   error: null,
   isApplyingRemoteState: false,
   presenceCount: 0,
-  lastSentEvent: null,
-  lastReceivedEvent: null,
-  isDebugOpen: false,
 
   setRoom: (room) =>
     set((state) => ({
@@ -175,9 +160,6 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
   setError: (error) => set({ error }),
   setIsApplyingRemoteState: (isApplyingRemoteState) => set({ isApplyingRemoteState }),
   setPresenceCount: (presenceCount) => set({ presenceCount }),
-  setLastSentEvent: (lastSentEvent) => set({ lastSentEvent }),
-  setLastReceivedEvent: (lastReceivedEvent) => set({ lastReceivedEvent }),
-  toggleDebugOpen: () => set((state) => ({ isDebugOpen: !state.isDebugOpen })),
   resetTogetherState: () =>
     set({
       room: null,
@@ -197,7 +179,5 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
       error: null,
       isApplyingRemoteState: false,
       presenceCount: 0,
-      lastSentEvent: null,
-      lastReceivedEvent: null,
     }),
 }));

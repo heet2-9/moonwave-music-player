@@ -18,6 +18,7 @@ interface TogetherChatState {
   draftMessage: string;
   isPartnerTyping: boolean;
   typingParticipantName: string | null;
+  toastNotification: ChatMessage | null;
 
   // Actions
   addMessage: (message: ChatMessage) => void;
@@ -30,6 +31,8 @@ interface TogetherChatState {
   setPartnerTyping: (isTyping: boolean, name?: string | null) => void;
   clearPartnerTyping: () => void;
   markMessageSeen: (messageId: string) => void;
+  setToastNotification: (notification: ChatMessage | null) => void;
+  dismissToast: () => void;
 }
 
 export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
@@ -39,6 +42,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
   draftMessage: "",
   isPartnerTyping: false,
   typingParticipantName: null,
+  toastNotification: null,
 
   addMessage: (message: ChatMessage) => {
     // Validate text & fields
@@ -65,12 +69,15 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
       const currentParticipantId = useTogetherStore.getState().participantId;
       const isLocalUser = message.senderId === currentParticipantId;
 
-      // Increment unread count if chat panel is closed and message is from partner
-      const shouldIncrementUnread = !state.isChatOpen && !isLocalUser;
+      // If message is from remote partner and chat panel is CLOSED:
+      // 1. Increment unread count
+      // 2. Trigger toast popup notification
+      const isClosedRemoteMessage = !state.isChatOpen && !isLocalUser;
 
       return {
         messages: [...state.messages, cleanMessage],
-        unreadCount: shouldIncrementUnread ? state.unreadCount + 1 : state.unreadCount,
+        unreadCount: isClosedRemoteMessage ? state.unreadCount + 1 : state.unreadCount,
+        toastNotification: isClosedRemoteMessage ? cleanMessage : state.toastNotification,
       };
     });
   },
@@ -101,7 +108,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
     get().addMessage(chatMessage);
 
     // 2. Clear draft & keep chat open
-    set({ draftMessage: "", isChatOpen: true });
+    set({ draftMessage: "", isChatOpen: true, toastNotification: null });
 
     // 3. Broadcast to partner through togetherRoom
     try {
@@ -119,6 +126,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
       draftMessage: "",
       isPartnerTyping: false,
       typingParticipantName: null,
+      toastNotification: null,
     });
   },
 
@@ -126,6 +134,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
     set((state) => ({
       isChatOpen: isOpen,
       unreadCount: isOpen ? 0 : state.unreadCount,
+      toastNotification: isOpen ? null : state.toastNotification,
     }));
   },
 
@@ -135,6 +144,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
       return {
         isChatOpen: nextState,
         unreadCount: nextState ? 0 : state.unreadCount,
+        toastNotification: nextState ? null : state.toastNotification,
       };
     });
   },
@@ -173,5 +183,13 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
         ),
       };
     });
+  },
+
+  setToastNotification: (toastNotification: ChatMessage | null) => {
+    set({ toastNotification });
+  },
+
+  dismissToast: () => {
+    set({ toastNotification: null });
   },
 }));
