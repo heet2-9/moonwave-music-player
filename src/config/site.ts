@@ -2,6 +2,8 @@ export const siteConfig = {
   appName: "MOONWAVE",
   girlfriendName: "Aaru",
   nickname: "Aaru",
+  hostName: "Heet",
+  partnerName: "Aaru",
   tagline: "Your private music space",
   welcomeMessage: "Good evening, Aaru",
   accentColor: "#f472b6", // Soft Pink
@@ -13,6 +15,7 @@ export const siteConfig = {
     karaokeSubtitle: "Your stage is ready 🎤",
     favoritesSubtitle: "Songs you keep coming back to.",
     playlistsSubtitle: "Curated moments & memories.",
+    togetherSubtitle: "Two places. One song.",
   },
 
   personalNote: {

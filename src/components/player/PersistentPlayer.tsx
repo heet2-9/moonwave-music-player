@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { usePlayerStore } from "@/store/playerStore";
 import { useLibraryStore } from "@/store/libraryStore";
+import { useTogetherStore } from "@/store/togetherStore";
 import {
   Play,
   Pause,
@@ -17,6 +19,7 @@ import {
   ListMusic,
   FileText,
   Maximize2,
+  Radio,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +50,8 @@ export default function PersistentPlayer() {
 
   const favorites = useLibraryStore((state) => state.favorites);
   const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
+
+  const isJoined = useTogetherStore((state) => state.isJoined);
 
   if (!currentSong) return null;
 
@@ -104,9 +109,21 @@ export default function PersistentPlayer() {
           </div>
 
           <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setNowPlayingOpen(true)}>
-            <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:text-pink-300 transition-colors">
-              {currentSong.title}
-            </h4>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h4 className="text-xs sm:text-sm font-semibold text-white truncate hover:text-pink-300 transition-colors">
+                {currentSong.title}
+              </h4>
+              {isJoined && (
+                <Link
+                  href="/together"
+                  className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30 text-[9px] font-bold shrink-0 animate-pulse hover:bg-pink-500/30 transition-all"
+                  title="Together Room Active"
+                >
+                  <Radio className="w-2.5 h-2.5 text-pink-400" />
+                  <span>TOGETHER</span>
+                </Link>
+              )}
+            </div>
             <p className="text-[11px] sm:text-xs text-zinc-400 truncate">{currentSong.artist}</p>
           </div>
 

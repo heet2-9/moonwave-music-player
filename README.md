@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MOONWAVE Music Player
 
-## Getting Started
+A dark cinematic, glassmorphic music player built with Next.js, Tailwind CSS, Zustand, and HTML5 Audio Engine.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 📻 Together Room (Real-time Dual Listening)
+
+The **Together Room** feature allows two listeners (e.g. Heet & Aaru) to join a private room (`/together`) and listen to the same song with clock-synchronized real-time playback.
+
+### Key Architecture Details
+- **100% Local Audio**: Audio files are **NEVER** uploaded to any backend. Each client device plays local/public MP3 files independently.
+- **Metadata Only Transmitted**: Only `songId`, `position`, `isPlaying`, `playbackStartedAt`, `queueIndex`, and reaction events are synchronized.
+- **Zero Double Audio Engine**: Integrates directly with the single existing `AudioEngine` (`src/lib/audioEngine.ts`) and `usePlayerStore`.
+
+---
+
+## 🛠️ Supabase Realtime Setup Guide
+
+### 1. Create a Supabase Project
+1. Go to [https://supabase.com](https://supabase.com) and create a free project.
+2. Under **Project Settings** → **API**, locate your:
+   - **Project URL** (`https://xxxx.supabase.co`)
+   - **anon public key**
+
+### 2. Enable Realtime
+In your Supabase Dashboard:
+1. Go to **Project Settings** → **Realtime**.
+2. Ensure **Broadcast** and **Presence** are enabled (enabled by default for channels).
+
+### 3. Set Environment Variables
+Create `.env.local` in the root of your project:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project-id.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Vercel Deployment
+When deploying to Vercel:
+1. Go to your Vercel Project Settings → **Environment Variables**.
+2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🧪 Local Testing & Fallback Mode
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Development Fallback**: If Supabase environment variables are missing, Together Room uses a `BroadcastChannel` fallback.
+- **Note on Fallback**: `BroadcastChannel` is intended for **same-browser / same-device testing across two tabs**. For real multi-device synchronization over the internet between two different phones or computers, Supabase Realtime credentials must be set.

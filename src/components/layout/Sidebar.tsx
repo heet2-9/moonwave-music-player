@@ -9,6 +9,7 @@ import {
   ListMusic,
   Mic2,
   PlusCircle,
+  Radio,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export function navItems() {
   return [
     { label: "Home", href: "/", icon: Home },
     { label: "Playlist", href: "/playlists", icon: ListMusic },
+    { label: "Together", href: "/together", icon: Radio, badge: "Duo" },
     { label: "Karaoke", href: "/karaoke", icon: Mic2, badge: "Studio" },
   ];
 }
