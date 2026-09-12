@@ -21,7 +21,7 @@ The **Together Room** feature allows two listeners (e.g. Heet & Aaru) to join a 
 1. Go to [https://supabase.com](https://supabase.com) and create a free project.
 2. Under **Project Settings** → **API**, locate your:
    - **Project URL** (`https://xxxx.supabase.co`)
-   - **anon public key**
+   - **Publishable / Anon key**
 
 ### 2. Enable Realtime
 In your Supabase Dashboard:
@@ -33,13 +33,13 @@ Create `.env.local` in the root of your project:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key-here
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-supabase-publishable-key-here
 ```
 
 ### 4. Vercel Deployment
 When deploying to Vercel:
 1. Go to your Vercel Project Settings → **Environment Variables**.
-2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+2. Add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 ---
 

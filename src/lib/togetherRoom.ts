@@ -1,4 +1,4 @@
-import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
+import { getSupabaseClient } from "./supabase";
 import { useTogetherStore, TogetherRoom } from "@/store/togetherStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { initialSongs } from "@/data/songs";
@@ -78,10 +78,9 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
   store.setConnectionState("Connecting");
   store.setSubscriptionStatus("CONNECTING");
 
-  if (isSupabaseConfigured) {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const channelName = getChannelName(cleanCode);
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    const channelName = getChannelName(cleanCode);
       const channel = supabase.channel(channelName, {
         config: { presence: { key: store.participantId } },
       });
@@ -166,7 +165,6 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
             }
           });
       });
-    }
   }
 
   // Development Fallback via BroadcastChannel / LocalStorage
@@ -296,7 +294,8 @@ function broadcastEvent(event: string, payload: Record<string, unknown>) {
   const store = useTogetherStore.getState();
   store.setLastSentEvent({ type: event, timestamp: Date.now(), payload });
 
-  if (isSupabaseConfigured && activeChannel) {
+  const supabase = getSupabaseClient();
+  if (supabase && activeChannel) {
     activeChannel.send({
       type: "broadcast",
       event,
@@ -313,17 +312,16 @@ function broadcastEvent(event: string, payload: Record<string, unknown>) {
 
 async function setupRealtimeChannel(code: string, isHost: boolean) {
   const store = useTogetherStore.getState();
+  const supabase = getSupabaseClient();
 
-  if (isSupabaseConfigured) {
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const channelName = getChannelName(code);
-      const channel = supabase.channel(channelName, {
-        config: { presence: { key: store.participantId } },
-      });
+  if (supabase) {
+    const channelName = getChannelName(code);
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: store.participantId } },
+    });
 
-      activeChannel = channel;
-      subscribeToChannelEvents(channel);
+    activeChannel = channel;
+    subscribeToChannelEvents(channel);
 
       channel
         .on("presence", { event: "sync" }, () => {
@@ -364,7 +362,6 @@ async function setupRealtimeChannel(code: string, isHost: boolean) {
           }
         });
       return;
-    }
   }
 
   // Fallback setup

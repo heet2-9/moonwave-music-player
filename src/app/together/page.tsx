@@ -101,7 +101,7 @@ function TogetherContent() {
               <p className="font-bold text-amber-300">Cross-Device Sync Setup Notice</p>
               <p className="text-amber-200/80 leading-relaxed">
                 Together Rooms require Supabase environment variables for real-time synchronization between different devices over the internet.
-                Currently running in same-device browser fallback mode. Add <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">.env.local</code> to enable cross-device phone ↔ laptop sync.
+                Currently running in same-device browser fallback mode. Add <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY</code> to <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">.env.local</code> to enable cross-device phone ↔ laptop sync.
               </p>
             </div>
           </div>
