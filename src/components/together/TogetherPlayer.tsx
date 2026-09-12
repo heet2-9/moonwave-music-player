@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useTogetherStore } from "@/store/togetherStore";
+import { useTogetherChatStore } from "@/store/togetherChatStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { siteConfig } from "@/config/site";
 import { leaveRoom, setSharedControls, updatePlaybackState, getChannelName } from "@/lib/togetherRoom";
@@ -10,6 +11,7 @@ import { isSupabaseConfigured } from "@/lib/supabase";
 import { audioEngine } from "@/lib/audioEngine";
 import SyncIndicator from "./SyncIndicator";
 import TogetherReactions from "./TogetherReactions";
+import TogetherChat from "./TogetherChat";
 import {
   Play,
   Pause,
@@ -27,6 +29,7 @@ import {
   Bug,
   ChevronDown,
   ChevronUp,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -47,6 +50,8 @@ export default function TogetherPlayer() {
     isDebugOpen,
     toggleDebugOpen,
   } = useTogetherStore();
+
+  const { isChatOpen, toggleChatOpen, unreadCount } = useTogetherChatStore();
 
   const {
     currentSong,
@@ -205,6 +210,25 @@ export default function TogetherPlayer() {
           <SyncIndicator />
 
           <button
+            onClick={toggleChatOpen}
+            className={cn(
+              "relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all select-none",
+              isChatOpen
+                ? "bg-pink-500/20 border-pink-500/40 text-pink-300 shadow-md"
+                : "bg-white/5 hover:bg-white/10 border-white/10 text-zinc-300 hover:text-white"
+            )}
+            title="Toggle Together Chat"
+          >
+            <MessageSquare className="w-3.5 h-3.5 text-pink-400" />
+            <span>CHAT</span>
+            {unreadCount > 0 && (
+              <span className="ml-0.5 px-1.5 py-0.2 text-[10px] font-extrabold rounded-full bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-sm animate-pulse">
+                {unreadCount}
+              </span>
+            )}
+          </button>
+
+          <button
             onClick={toggleDebugOpen}
             className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white text-xs font-mono transition-all"
             title="Toggle Debug Info"
@@ -288,6 +312,13 @@ export default function TogetherPlayer() {
               <span className="text-zinc-500">Last Received: </span>
               <span className="text-indigo-300">
                 {lastReceivedEvent ? `${lastReceivedEvent.type}` : "None"}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Chat Status: </span>
+              <span className={isChatOpen ? "text-pink-300 font-bold" : "text-zinc-300 font-bold"}>
+                {isChatOpen ? "Open" : "Closed"} ({unreadCount} unread)
               </span>
             </div>
           </div>
@@ -529,6 +560,9 @@ export default function TogetherPlayer() {
           </button>
         </div>
       </div>
+
+      {/* Real-time Chat Panel */}
+      <TogetherChat />
     </div>
   );
 }

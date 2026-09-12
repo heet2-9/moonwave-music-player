@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "./supabase";
 import { useTogetherStore, TogetherRoom } from "@/store/togetherStore";
+import { useTogetherChatStore, ChatMessage } from "@/store/togetherChatStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { initialSongs } from "@/data/songs";
 import { Song } from "@/types/music";
@@ -75,6 +76,7 @@ export async function createRoom(): Promise<TogetherRoom> {
   store.setIsJoined(true);
   store.setConnectionState("Connecting");
   store.setSubscriptionStatus("CONNECTING");
+  useTogetherChatStore.getState().clearMessages();
 
   await setupRealtimeChannel(code, true);
   return initialRoom;
@@ -93,6 +95,7 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
   store.setRole("guest");
   store.setConnectionState("Connecting");
   store.setSubscriptionStatus("CONNECTING");
+  useTogetherChatStore.getState().clearMessages();
 
   const supabase = getSupabaseClient();
   if (supabase) {
@@ -240,6 +243,7 @@ export function leaveRoom(): void {
     localStorage.removeItem(`moonwave_room_${room.code}`);
   }
 
+  useTogetherChatStore.getState().clearMessages();
   store.resetTogetherState();
 }
 
@@ -288,6 +292,21 @@ export function sendReaction(emoji: string): void {
   store.addReaction({ emoji, sender: "You" });
 
   broadcastEvent("REACTION", { emoji, sender, timestamp: Date.now() });
+}
+
+export function sendChatMessage(message: ChatMessage): void {
+  const store = useTogetherStore.getState();
+  if (!store.room || !store.isJoined) return;
+
+  broadcastEvent("CHAT_MESSAGE", {
+    type: "CHAT_MESSAGE",
+    id: message.id,
+    messageId: message.id,
+    senderId: message.senderId,
+    senderName: message.senderName,
+    text: message.text,
+    timestamp: message.timestamp,
+  });
 }
 
 export function setSharedControls(enabled: boolean): void {
@@ -424,6 +443,12 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
         store.setIsHost(true);
         store.setRole("host");
       }
+    })
+    .on("broadcast", { event: "CHAT_MESSAGE" }, ({ payload }) => {
+      if (payload) {
+        store.setLastReceivedEvent({ type: "CHAT_MESSAGE", timestamp: Date.now(), payload });
+        handleIncomingChatMessage(payload);
+      }
     });
 }
 
@@ -453,8 +478,33 @@ function setupFallbackChannel(code: string) {
       if (data.participantId !== store.participantId) {
         store.setGuestConnected(false);
       }
+    } else if (data.type === "CHAT_MESSAGE") {
+      handleIncomingChatMessage(data);
     }
   };
+}
+
+export function handleIncomingChatMessage(payload: unknown): void {
+  if (!payload || typeof payload !== "object") return;
+  const p = payload as Record<string, unknown>;
+
+  const id = typeof p.id === "string" ? p.id : typeof p.messageId === "string" ? p.messageId : null;
+  const senderId = typeof p.senderId === "string" ? p.senderId : null;
+  const senderName = typeof p.senderName === "string" ? p.senderName : null;
+  const text = typeof p.text === "string" ? p.text.trim() : null;
+  const timestamp = typeof p.timestamp === "number" ? p.timestamp : Date.now();
+
+  if (!id || !senderId || !senderName || !text || text.length === 0 || text.length > 500) {
+    return;
+  }
+
+  useTogetherChatStore.getState().addMessage({
+    id,
+    senderId,
+    senderName,
+    text,
+    timestamp,
+  });
 }
 
 export function applyRemotePlaybackToPlayer(remoteRoom: TogetherRoom, serverTimestamp: number) {
