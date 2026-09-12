@@ -21,6 +21,7 @@ export interface TogetherRoom {
 export type ConnectionState = "Disconnected" | "Connecting" | "Connected" | "Reconnecting";
 export type SyncState = "SYNCED" | "SYNCING" | "DRIFT DETECTED" | "DISCONNECTED";
 export type SyncQuality = "Excellent" | "Good" | "Syncing" | "Poor connection";
+export type SubscriptionStatus = "SUBSCRIBED" | "CONNECTING" | "CLOSED" | "ERROR";
 
 export interface FloatingReaction {
   id: string;
@@ -29,12 +30,19 @@ export interface FloatingReaction {
   timestamp: number;
 }
 
+export interface DebugEventLog {
+  type: string;
+  timestamp: number;
+  payload?: Record<string, unknown>;
+}
+
 interface TogetherStoreState {
   room: TogetherRoom | null;
   roomCode: string | null;
   participantId: string;
   role: "host" | "guest" | null;
   connectionState: ConnectionState;
+  subscriptionStatus: SubscriptionStatus;
   isJoined: boolean;
   isHost: boolean;
   guestConnected: boolean;
@@ -46,6 +54,10 @@ interface TogetherStoreState {
   reactions: FloatingReaction[];
   error: string | null;
   isApplyingRemoteState: boolean;
+  presenceCount: number;
+  lastSentEvent: DebugEventLog | null;
+  lastReceivedEvent: DebugEventLog | null;
+  isDebugOpen: boolean;
 
   // Actions
   setRoom: (room: TogetherRoom | null) => void;
@@ -53,6 +65,7 @@ interface TogetherStoreState {
   setParticipantId: (id: string) => void;
   setRole: (role: "host" | "guest" | null) => void;
   setConnectionState: (state: ConnectionState) => void;
+  setSubscriptionStatus: (status: SubscriptionStatus) => void;
   setIsJoined: (joined: boolean) => void;
   setIsHost: (isHost: boolean) => void;
   setGuestConnected: (connected: boolean) => void;
@@ -63,6 +76,10 @@ interface TogetherStoreState {
   removeReaction: (id: string) => void;
   setError: (error: string | null) => void;
   setIsApplyingRemoteState: (applying: boolean) => void;
+  setPresenceCount: (count: number) => void;
+  setLastSentEvent: (event: DebugEventLog) => void;
+  setLastReceivedEvent: (event: DebugEventLog) => void;
+  toggleDebugOpen: () => void;
   resetTogetherState: () => void;
 }
 
@@ -82,6 +99,7 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
   participantId: typeof window !== "undefined" ? getStoredParticipantId() : "moonwave_temp",
   role: null,
   connectionState: "Disconnected",
+  subscriptionStatus: "CLOSED",
   isJoined: false,
   isHost: false,
   guestConnected: false,
@@ -93,6 +111,10 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
   reactions: [],
   error: null,
   isApplyingRemoteState: false,
+  presenceCount: 0,
+  lastSentEvent: null,
+  lastReceivedEvent: null,
+  isDebugOpen: false,
 
   setRoom: (room) =>
     set((state) => ({
@@ -107,6 +129,7 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
       connectionState,
       syncState: connectionState === "Connected" ? "SYNCED" : "DISCONNECTED",
     }),
+  setSubscriptionStatus: (subscriptionStatus) => set({ subscriptionStatus }),
   setIsJoined: (isJoined) => set({ isJoined }),
   setIsHost: (isHost) => set({ isHost }),
   setGuestConnected: (guestConnected) => set({ guestConnected }),
@@ -143,7 +166,7 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
           sender: reaction.sender,
           timestamp: Date.now(),
         },
-      ].slice(-10), // keep latest 10
+      ].slice(-10),
     })),
   removeReaction: (id) =>
     set((state) => ({
@@ -151,12 +174,17 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
     })),
   setError: (error) => set({ error }),
   setIsApplyingRemoteState: (isApplyingRemoteState) => set({ isApplyingRemoteState }),
+  setPresenceCount: (presenceCount) => set({ presenceCount }),
+  setLastSentEvent: (lastSentEvent) => set({ lastSentEvent }),
+  setLastReceivedEvent: (lastReceivedEvent) => set({ lastReceivedEvent }),
+  toggleDebugOpen: () => set((state) => ({ isDebugOpen: !state.isDebugOpen })),
   resetTogetherState: () =>
     set({
       room: null,
       roomCode: null,
       role: null,
       connectionState: "Disconnected",
+      subscriptionStatus: "CLOSED",
       isJoined: false,
       isHost: false,
       guestConnected: false,
@@ -168,5 +196,8 @@ export const useTogetherStore = create<TogetherStoreState>((set) => ({
       reactions: [],
       error: null,
       isApplyingRemoteState: false,
+      presenceCount: 0,
+      lastSentEvent: null,
+      lastReceivedEvent: null,
     }),
 }));

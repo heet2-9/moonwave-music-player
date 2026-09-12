@@ -5,7 +5,8 @@ import Image from "next/image";
 import { useTogetherStore } from "@/store/togetherStore";
 import { usePlayerStore } from "@/store/playerStore";
 import { siteConfig } from "@/config/site";
-import { leaveRoom, setSharedControls, updatePlaybackState } from "@/lib/togetherRoom";
+import { leaveRoom, setSharedControls, updatePlaybackState, getChannelName } from "@/lib/togetherRoom";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import { audioEngine } from "@/lib/audioEngine";
 import SyncIndicator from "./SyncIndicator";
 import TogetherReactions from "./TogetherReactions";
@@ -23,6 +24,9 @@ import {
   Radio,
   Volume2,
   VolumeX,
+  Bug,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,6 +38,14 @@ export default function TogetherPlayer() {
     sharedControls,
     autoplayBlocked,
     setAutoplayBlocked,
+    subscriptionStatus,
+    presenceCount,
+    lastSentEvent,
+    lastReceivedEvent,
+    participantId,
+    driftMs,
+    isDebugOpen,
+    toggleDebugOpen,
   } = useTogetherStore();
 
   const {
@@ -193,6 +205,16 @@ export default function TogetherPlayer() {
           <SyncIndicator />
 
           <button
+            onClick={toggleDebugOpen}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-zinc-400 hover:text-white text-xs font-mono transition-all"
+            title="Toggle Debug Info"
+          >
+            <Bug className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Debug</span>
+            {isDebugOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <button
             onClick={leaveRoom}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-300 text-xs font-medium transition-all"
           >
@@ -201,6 +223,76 @@ export default function TogetherPlayer() {
           </button>
         </div>
       </div>
+
+      {/* Dev Debug Panel */}
+      {isDebugOpen && (
+        <div className="p-4 rounded-2xl bg-black/80 border border-purple-500/30 font-mono text-[11px] text-zinc-300 space-y-2 backdrop-blur-xl shadow-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 pb-2">
+            <span className="font-bold text-purple-300 flex items-center gap-1.5">
+              <Bug className="w-4 h-4 text-purple-400" />
+              Realtime Diagnostics
+            </span>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-purple-500/20 text-purple-300">
+              {isSupabaseConfigured ? "Supabase Active" : "Fallback Active"}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-1">
+            <div>
+              <span className="text-zinc-500">Supabase Config: </span>
+              <span className={isSupabaseConfigured ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                {isSupabaseConfigured ? "CONNECTED" : "UNCONFIGURED (Same-Device)"}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Channel: </span>
+              <span className="text-pink-300 font-bold">{room?.code ? getChannelName(room.code) : "N/A"}</span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Subscription: </span>
+              <span className={subscriptionStatus === "SUBSCRIBED" ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
+                {subscriptionStatus}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Presence Count: </span>
+              <span className="text-white font-bold">{presenceCount} / 2</span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Role: </span>
+              <span className="text-purple-300 font-bold">{isHost ? "HOST" : "GUEST"}</span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Session ID: </span>
+              <span className="text-zinc-400 truncate">{participantId.substring(0, 14)}...</span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Calculated Drift: </span>
+              <span className="text-white font-bold">{(driftMs / 1000).toFixed(2)}s ({Math.round(driftMs)}ms)</span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Last Sent: </span>
+              <span className="text-emerald-300">
+                {lastSentEvent ? `${lastSentEvent.type}` : "None"}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Last Received: </span>
+              <span className="text-indigo-300">
+                {lastReceivedEvent ? `${lastReceivedEvent.type}` : "None"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Autoplay Unlock Banner */}
       {autoplayBlocked && (

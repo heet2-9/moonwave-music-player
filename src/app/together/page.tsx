@@ -3,9 +3,10 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTogetherStore } from "@/store/togetherStore";
-import { createRoom, joinRoom } from "@/lib/togetherRoom";
+import { createRoom, joinRoom, normalizeRoomCode } from "@/lib/togetherRoom";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import TogetherPlayer from "@/components/together/TogetherPlayer";
-import { Sparkles, Users, Radio, ArrowRight, Heart, AlertCircle } from "lucide-react";
+import { Sparkles, Users, Radio, ArrowRight, Heart, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function TogetherContent() {
@@ -21,7 +22,7 @@ function TogetherContent() {
 
   useEffect(() => {
     if (roomQuery) {
-      setInputCode(roomQuery.toUpperCase());
+      setInputCode(normalizeRoomCode(roomQuery));
       setActiveTab("join");
     }
   }, [roomQuery]);
@@ -40,14 +41,15 @@ function TogetherContent() {
 
   const handleJoin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputCode.trim()) {
-      setError("Please enter a room code.");
+    const clean = normalizeRoomCode(inputCode);
+    if (!clean) {
+      setError("Please enter a valid room code.");
       return;
     }
     setIsJoining(true);
     setError(null);
     try {
-      await joinRoom(inputCode.trim());
+      await joinRoom(clean);
     } catch (err: any) {
       setError(err.message || "Room not found. Check the code and try again.");
     } finally {
@@ -90,6 +92,20 @@ function TogetherContent() {
             Create a private room and share the moment with synchronized real-time audio playback.
           </p>
         </div>
+
+        {/* Supabase Unconfigured Warning Banner */}
+        {!isSupabaseConfigured && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3 text-left backdrop-blur-md shadow-md">
+            <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="font-bold text-amber-300">Cross-Device Sync Setup Notice</p>
+              <p className="text-amber-200/80 leading-relaxed">
+                Together Rooms require Supabase environment variables for real-time synchronization between different devices over the internet.
+                Currently running in same-device browser fallback mode. Add <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> to <code className="bg-black/30 px-1 py-0.5 rounded text-amber-300 font-mono">.env.local</code> to enable cross-device phone ↔ laptop sync.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Action Card Container */}
         <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-white/10 via-[#0d0d15]/90 to-[#09090e] border border-white/10 backdrop-blur-2xl shadow-2xl space-y-6">
@@ -161,14 +177,14 @@ function TogetherContent() {
           {activeTab === "join" && (
             <form onSubmit={handleJoin} className="space-y-4 pt-2">
               <p className="text-xs text-zinc-400">
-                Enter the 8-character room code shared with you.
+                Enter the room code shared with you.
               </p>
               <input
                 type="text"
                 value={inputCode}
-                onChange={(e) => setInputCode(e.target.value.toUpperCase())}
+                onChange={(e) => setInputCode(normalizeRoomCode(e.target.value))}
                 placeholder="Enter room code (e.g. MOON-7K4P)"
-                maxLength={10}
+                maxLength={12}
                 className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3.5 text-center text-sm font-mono tracking-widest text-white placeholder-zinc-500 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/50 uppercase transition-all"
               />
               <button
