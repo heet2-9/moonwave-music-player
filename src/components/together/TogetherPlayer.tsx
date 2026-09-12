@@ -51,7 +51,7 @@ export default function TogetherPlayer() {
     toggleDebugOpen,
   } = useTogetherStore();
 
-  const { isChatOpen, toggleChatOpen, unreadCount } = useTogetherChatStore();
+  const { isChatOpen, toggleChatOpen, unreadCount, isPartnerTyping } = useTogetherChatStore();
 
   const {
     currentSong,
@@ -319,6 +319,13 @@ export default function TogetherPlayer() {
               <span className="text-zinc-500">Chat Status: </span>
               <span className={isChatOpen ? "text-pink-300 font-bold" : "text-zinc-300 font-bold"}>
                 {isChatOpen ? "Open" : "Closed"} ({unreadCount} unread)
+              </span>
+            </div>
+
+            <div>
+              <span className="text-zinc-500">Partner Typing: </span>
+              <span className={isPartnerTyping ? "text-pink-400 font-bold" : "text-zinc-400"}>
+                {isPartnerTyping ? "Yes" : "No"}
               </span>
             </div>
           </div>

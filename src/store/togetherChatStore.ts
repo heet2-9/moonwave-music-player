@@ -8,6 +8,7 @@ export interface ChatMessage {
   senderName: string;
   text: string;
   timestamp: number;
+  seen?: boolean;
 }
 
 interface TogetherChatState {
@@ -15,6 +16,8 @@ interface TogetherChatState {
   isChatOpen: boolean;
   unreadCount: number;
   draftMessage: string;
+  isPartnerTyping: boolean;
+  typingParticipantName: string | null;
 
   // Actions
   addMessage: (message: ChatMessage) => void;
@@ -24,6 +27,9 @@ interface TogetherChatState {
   toggleChatOpen: () => void;
   markMessagesRead: () => void;
   setDraftMessage: (text: string) => void;
+  setPartnerTyping: (isTyping: boolean, name?: string | null) => void;
+  clearPartnerTyping: () => void;
+  markMessageSeen: (messageId: string) => void;
 }
 
 export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
@@ -31,6 +37,8 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
   isChatOpen: false,
   unreadCount: 0,
   draftMessage: "",
+  isPartnerTyping: false,
+  typingParticipantName: null,
 
   addMessage: (message: ChatMessage) => {
     // Validate text & fields
@@ -86,6 +94,7 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
       senderName,
       text: trimmed,
       timestamp,
+      seen: false,
     };
 
     // 1. Add locally immediately
@@ -108,6 +117,8 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
       messages: [],
       unreadCount: 0,
       draftMessage: "",
+      isPartnerTyping: false,
+      typingParticipantName: null,
     });
   },
 
@@ -134,5 +145,33 @@ export const useTogetherChatStore = create<TogetherChatState>((set, get) => ({
 
   setDraftMessage: (draftMessage: string) => {
     set({ draftMessage });
+  },
+
+  setPartnerTyping: (isTyping: boolean, name?: string | null) => {
+    set({
+      isPartnerTyping: isTyping,
+      typingParticipantName: isTyping ? name || "Partner" : null,
+    });
+  },
+
+  clearPartnerTyping: () => {
+    set({
+      isPartnerTyping: false,
+      typingParticipantName: null,
+    });
+  },
+
+  markMessageSeen: (messageId: string) => {
+    if (!messageId) return;
+    set((state) => {
+      const target = state.messages.find((m) => m.id === messageId);
+      if (!target || target.seen) return state;
+
+      return {
+        messages: state.messages.map((m) =>
+          m.id === messageId ? { ...m, seen: true } : m
+        ),
+      };
+    });
   },
 }));

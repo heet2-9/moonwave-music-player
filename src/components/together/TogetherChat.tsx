@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useTogetherStore } from "@/store/togetherStore";
 import { useTogetherChatStore } from "@/store/togetherChatStore";
-import { sendReaction } from "@/lib/togetherRoom";
+import { sendReaction, sendTypingSignal, sendReadReceipt } from "@/lib/togetherRoom";
 import { siteConfig } from "@/config/site";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,8 +18,16 @@ import { cn } from "@/lib/utils";
 const QUICK_REACTIONS = ["❤️", "✨", "🔥", "🥹", "🎵"];
 
 export default function TogetherChat() {
-  const { isChatOpen, setChatOpen, messages, sendMessage, draftMessage, setDraftMessage } =
-    useTogetherChatStore();
+  const {
+    isChatOpen,
+    setChatOpen,
+    messages,
+    sendMessage,
+    draftMessage,
+    setDraftMessage,
+    isPartnerTyping,
+    typingParticipantName,
+  } = useTogetherChatStore();
 
   const { isHost, participantId, connectionState, room } = useTogetherStore();
 
@@ -30,6 +38,13 @@ export default function TogetherChat() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isNearBottom, setIsNearBottom] = useState(true);
 
+  // Local typing state refs
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isLocalTypingRef = useRef<boolean>(false);
+
+  // Seen tracking set
+  const seenMessageIdsRef = useRef<Set<string>>(new Set());
+
   const showScrollBottom = !isNearBottom && messages.length > 0;
 
   // Character limit validation
@@ -37,6 +52,87 @@ export default function TogetherChat() {
   const currentLength = draftMessage.length;
   const isOverLimit = currentLength > maxLength;
   const isValid = draftMessage.trim().length > 0 && !isOverLimit;
+
+  const stopLocalTyping = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+    if (isLocalTypingRef.current) {
+      isLocalTypingRef.current = false;
+      sendTypingSignal(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDraftMessage(value);
+
+    if (value.trim().length > 0) {
+      if (!isLocalTypingRef.current) {
+        isLocalTypingRef.current = true;
+        sendTypingSignal(true);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        stopLocalTyping();
+      }, 1500);
+    } else {
+      stopLocalTyping();
+    }
+  };
+
+  // Clean up typing status on close or unmount
+  useEffect(() => {
+    return () => {
+      stopLocalTyping();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isChatOpen) {
+      stopLocalTyping();
+    }
+  }, [isChatOpen]);
+
+  // Viewport IntersectionObserver for Seen Receipts
+  useEffect(() => {
+    if (!isChatOpen || !messagesContainerRef.current) return;
+
+    const container = messagesContainerRef.current;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
+            const messageId = entry.target.getAttribute("data-message-id");
+            if (messageId && !seenMessageIdsRef.current.has(messageId)) {
+              seenMessageIdsRef.current.add(messageId);
+              sendReadReceipt(messageId);
+              observer.unobserve(entry.target);
+            }
+          }
+        });
+      },
+      {
+        root: container,
+        threshold: 0.5,
+      }
+    );
+
+    const remoteElements = container.querySelectorAll("[data-remote-message='true']");
+    remoteElements.forEach((el) => {
+      const msgId = el.getAttribute("data-message-id");
+      if (msgId && !seenMessageIdsRef.current.has(msgId)) {
+        observer.observe(el);
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [isChatOpen, messages]);
 
   // Auto-scroll handler
   const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -76,6 +172,7 @@ export default function TogetherChat() {
     if (e) e.preventDefault();
     if (!isValid) return;
 
+    stopLocalTyping();
     sendMessage(draftMessage);
     setTimeout(() => scrollToBottom("smooth"), 50);
   };
@@ -173,6 +270,8 @@ export default function TogetherChat() {
               return (
                 <div
                   key={msg.id}
+                  data-message-id={msg.id}
+                  data-remote-message={!isLocal ? "true" : "false"}
                   className={cn(
                     "flex flex-col max-w-[82%]",
                     isLocal ? "ml-auto items-end" : "mr-auto items-start"
@@ -193,9 +292,24 @@ export default function TogetherChat() {
                   >
                     {msg.text}
                   </div>
-                  <span className="text-[9px] text-zinc-500 mt-1 px-1 font-mono">
-                    {formatTime(msg.timestamp)}
-                  </span>
+                  {isLocal ? (
+                    <div className="flex items-center gap-1.5 mt-1 px-1 text-[9px] text-zinc-500 font-mono">
+                      <span>{formatTime(msg.timestamp)}</span>
+                      {msg.seen ? (
+                        <span className="text-pink-400 font-bold flex items-center gap-0.5" title="Seen by partner">
+                          ✓✓ Seen
+                        </span>
+                      ) : (
+                        <span className="text-zinc-500 font-bold" title="Sent">
+                          ✓
+                        </span>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-[9px] text-zinc-500 mt-1 px-1 font-mono">
+                      {formatTime(msg.timestamp)}
+                    </span>
+                  )}
                 </div>
               );
             })
@@ -230,6 +344,26 @@ export default function TogetherChat() {
           </div>
         </div>
 
+        {/* Real-time Partner Typing Indicator */}
+        <AnimatePresence>
+          {isPartnerTyping && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.15 }}
+              className="px-4 py-1.5 bg-pink-500/10 border-t border-pink-500/20 flex items-center gap-2 text-xs text-pink-300 font-medium shrink-0"
+            >
+              <span>{typingParticipantName || partnerName} is typing</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-bounce [animation-delay:-0.3s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-bounce [animation-delay:-0.15s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-pink-400 animate-bounce" />
+              </span>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Input Form */}
         <form
           onSubmit={handleSend}
@@ -239,7 +373,7 @@ export default function TogetherChat() {
             <input
               type="text"
               value={draftMessage}
-              onChange={(e) => setDraftMessage(e.target.value)}
+              onChange={handleInputChange}
               onKeyDown={handleKeyDown}
               placeholder={`Message ${partnerName}...`}
               maxLength={maxLength}

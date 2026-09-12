@@ -309,6 +309,36 @@ export function sendChatMessage(message: ChatMessage): void {
   });
 }
 
+export function sendTypingSignal(isTyping: boolean): void {
+  const store = useTogetherStore.getState();
+  if (!store.room || !store.isJoined) return;
+
+  const isHost = store.isHost;
+  const senderName = isHost
+    ? siteConfig.hostName || "Heet"
+    : siteConfig.partnerName || "Aaru";
+
+  broadcastEvent("CHAT_TYPING", {
+    type: "CHAT_TYPING",
+    senderId: store.participantId,
+    senderName,
+    isTyping,
+    timestamp: Date.now(),
+  });
+}
+
+export function sendReadReceipt(messageId: string): void {
+  const store = useTogetherStore.getState();
+  if (!store.room || !store.isJoined || !messageId) return;
+
+  broadcastEvent("CHAT_SEEN", {
+    type: "CHAT_SEEN",
+    messageId,
+    readerId: store.participantId,
+    timestamp: Date.now(),
+  });
+}
+
 export function setSharedControls(enabled: boolean): void {
   const store = useTogetherStore.getState();
   const room = store.room;
@@ -449,6 +479,18 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
         store.setLastReceivedEvent({ type: "CHAT_MESSAGE", timestamp: Date.now(), payload });
         handleIncomingChatMessage(payload);
       }
+    })
+    .on("broadcast", { event: "CHAT_TYPING" }, ({ payload }) => {
+      if (payload) {
+        store.setLastReceivedEvent({ type: "CHAT_TYPING", timestamp: Date.now(), payload });
+        handleIncomingTypingEvent(payload);
+      }
+    })
+    .on("broadcast", { event: "CHAT_SEEN" }, ({ payload }) => {
+      if (payload) {
+        store.setLastReceivedEvent({ type: "CHAT_SEEN", timestamp: Date.now(), payload });
+        handleIncomingSeenEvent(payload);
+      }
     });
 }
 
@@ -480,6 +522,10 @@ function setupFallbackChannel(code: string) {
       }
     } else if (data.type === "CHAT_MESSAGE") {
       handleIncomingChatMessage(data);
+    } else if (data.type === "CHAT_TYPING") {
+      handleIncomingTypingEvent(data);
+    } else if (data.type === "CHAT_SEEN") {
+      handleIncomingSeenEvent(data);
     }
   };
 }
@@ -505,6 +551,50 @@ export function handleIncomingChatMessage(payload: unknown): void {
     text,
     timestamp,
   });
+}
+
+let partnerTypingSafetyTimeout: NodeJS.Timeout | null = null;
+
+export function handleIncomingTypingEvent(payload: unknown): void {
+  if (!payload || typeof payload !== "object") return;
+  const p = payload as Record<string, unknown>;
+
+  const senderId = typeof p.senderId === "string" ? p.senderId : null;
+  const senderName = typeof p.senderName === "string" ? p.senderName : "Partner";
+  const isTyping = typeof p.isTyping === "boolean" ? p.isTyping : false;
+
+  const localId = useTogetherStore.getState().participantId;
+  if (!senderId || senderId === localId) return;
+
+  if (partnerTypingSafetyTimeout) {
+    clearTimeout(partnerTypingSafetyTimeout);
+    partnerTypingSafetyTimeout = null;
+  }
+
+  const chatStore = useTogetherChatStore.getState();
+
+  if (isTyping) {
+    chatStore.setPartnerTyping(true, senderName);
+    partnerTypingSafetyTimeout = setTimeout(() => {
+      chatStore.clearPartnerTyping();
+      partnerTypingSafetyTimeout = null;
+    }, 3000);
+  } else {
+    chatStore.clearPartnerTyping();
+  }
+}
+
+export function handleIncomingSeenEvent(payload: unknown): void {
+  if (!payload || typeof payload !== "object") return;
+  const p = payload as Record<string, unknown>;
+
+  const messageId = typeof p.messageId === "string" ? p.messageId : null;
+  const readerId = typeof p.readerId === "string" ? p.readerId : null;
+
+  const localId = useTogetherStore.getState().participantId;
+  if (!messageId || !readerId || readerId === localId) return;
+
+  useTogetherChatStore.getState().markMessageSeen(messageId);
 }
 
 export function applyRemotePlaybackToPlayer(remoteRoom: TogetherRoom, serverTimestamp: number) {
