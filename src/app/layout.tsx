@@ -9,6 +9,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 export const metadata: Metadata = {
   title: `${siteConfig.appName} — Private Music Space for ${siteConfig.girlfriendName}`,
   description: "A private music player, lyrics viewer, and karaoke studio.",
+  icons: {
+    icon: "/favicon.jpg",
+    shortcut: "/favicon.jpg",
+    apple: "/favicon.jpg",
+  },
 };
 
 export const viewport: Viewport = {

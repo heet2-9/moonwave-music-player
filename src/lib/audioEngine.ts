@@ -2,6 +2,8 @@ import { Song } from "@/types/music";
 
 class AudioEngine {
   private audio: HTMLAudioElement | null = null;
+  private preloadAudio: HTMLAudioElement | null = null;
+  private preloadedUrl: string | null = null;
   private audioContext: AudioContext | null = null;
   private analyserNode: AnalyserNode | null = null;
   private sourceNode: MediaElementAudioSourceNode | null = null;
@@ -14,11 +16,66 @@ class AudioEngine {
 
     if (!this.audio) {
       this.audio = new Audio();
-      this.audio.preload = "metadata";
+      this.audio.preload = "auto";
       this.audio.crossOrigin = "anonymous";
     }
 
+    if (!this.preloadAudio) {
+      this.preloadAudio = new Audio();
+      this.preloadAudio.preload = "auto";
+      this.preloadAudio.crossOrigin = "anonymous";
+      this.preloadAudio.volume = 0;
+      this.preloadAudio.muted = true;
+    }
+
     return this.audio;
+  }
+
+  public preloadTrack(url: string | null | undefined): void {
+    if (typeof window === "undefined" || !url) {
+      this.cleanupPreload();
+      return;
+    }
+
+    // Avoid duplicate preloading of the same resource
+    if (this.preloadedUrl === url) return;
+
+    if (!this.preloadAudio) {
+      this.preloadAudio = new Audio();
+      this.preloadAudio.preload = "auto";
+      this.preloadAudio.crossOrigin = "anonymous";
+      this.preloadAudio.volume = 0;
+      this.preloadAudio.muted = true;
+    }
+
+    this.preloadedUrl = url;
+    this.preloadAudio.src = url;
+
+    // Handle any background preloader error gracefully without breaking main playback
+    const handleError = (e: Event | string) => {
+      console.warn("Preloader background fetch notice for:", url, e);
+    };
+    this.preloadAudio.onerror = handleError;
+
+    // Preload into browser cache
+    this.preloadAudio.load();
+  }
+
+  public cleanupPreload(): void {
+    if (this.preloadAudio) {
+      try {
+        this.preloadAudio.pause();
+        this.preloadAudio.removeAttribute("src");
+        this.preloadAudio.load();
+      } catch (e) {
+        // Ignore cleanup errors
+      }
+    }
+    this.preloadedUrl = null;
+  }
+
+  public getPreloadedUrl(): string | null {
+    return this.preloadedUrl;
   }
 
   public getAudioElement(): HTMLAudioElement | null {

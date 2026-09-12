@@ -9,6 +9,7 @@ export default function AudioPlayerController() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const currentSong = usePlayerStore((state) => state.currentSong);
+  const nextSong = usePlayerStore((state) => state.nextSong);
   const isPlaying = usePlayerStore((state) => state.isPlaying);
   const volume = usePlayerStore((state) => state.volume);
   const isMuted = usePlayerStore((state) => state.isMuted);
@@ -23,7 +24,7 @@ export default function AudioPlayerController() {
 
   const addRecentlyPlayed = useLibraryStore((state) => state.addRecentlyPlayed);
 
-  // Initialize Audio Element
+  // Initialize Audio Element & Attach Event Listeners
   useEffect(() => {
     const audio = audioEngine.init();
     audioRef.current = audio;
@@ -47,8 +48,7 @@ export default function AudioPlayerController() {
     };
 
     const handleError = (e: any) => {
-      console.warn("Audio loading error:", e);
-      setIsPlaying(false);
+      console.warn("Audio element loading notice:", e);
     };
 
     audio.addEventListener("timeupdate", handleTimeUpdate);
@@ -64,7 +64,16 @@ export default function AudioPlayerController() {
     };
   }, [setCurrentTime, setDuration, nextTrack, setIsPlaying, currentSong]);
 
-  // Handle Track Source Changes
+  // Preload Upcoming Next Track
+  useEffect(() => {
+    if (nextSong && nextSong.audio) {
+      audioEngine.preloadTrack(nextSong.audio);
+    } else {
+      audioEngine.cleanupPreload();
+    }
+  }, [nextSong]);
+
+  // Handle Track Source Changes & Instant Transitions
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio || !currentSong) return;
@@ -77,7 +86,7 @@ export default function AudioPlayerController() {
 
       if (isPlaying) {
         audio.play().catch((err) => {
-          console.warn("Autoplay error or source block:", err);
+          console.warn("Autoplay policy or audio play error:", err);
           setIsPlaying(false);
         });
       }
