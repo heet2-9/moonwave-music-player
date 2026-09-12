@@ -347,11 +347,11 @@ export default function TogetherPlayer() {
             <span
               className={cn(
                 "w-2 h-2 rounded-full",
-                guestConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-ping"
+                guestConnected || presenceCount >= 2 ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-ping"
               )}
             />
-            <span className={guestConnected ? "text-emerald-400" : "text-amber-400"}>
-              {guestConnected ? "Connected" : "Waiting for partner..."}
+            <span className={guestConnected || presenceCount >= 2 ? "text-emerald-400" : "text-amber-400"}>
+              {guestConnected || presenceCount >= 2 ? "Connected" : "Waiting for partner..."}
             </span>
           </div>
         </div>

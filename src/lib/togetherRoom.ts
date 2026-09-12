@@ -29,6 +29,22 @@ export function getChannelName(code: string): string {
 let activeChannel: RealtimeChannel | null = null;
 let fallbackChannel: BroadcastChannel | null = null;
 
+function bindPresenceEvents(channel: RealtimeChannel) {
+  const updatePresence = () => {
+    const store = useTogetherStore.getState();
+    const presenceState = channel.presenceState();
+    const keys = Object.keys(presenceState);
+    const count = keys.length;
+    store.setPresenceCount(count);
+    store.setGuestConnected(count >= 2);
+  };
+
+  channel
+    .on("presence", { event: "sync" }, updatePresence)
+    .on("presence", { event: "join" }, updatePresence)
+    .on("presence", { event: "leave" }, updatePresence);
+}
+
 export async function createRoom(): Promise<TogetherRoom> {
   const store = useTogetherStore.getState();
   const playerState = usePlayerStore.getState();
@@ -81,90 +97,90 @@ export async function joinRoom(inputCode: string): Promise<TogetherRoom> {
   const supabase = getSupabaseClient();
   if (supabase) {
     const channelName = getChannelName(cleanCode);
-      const channel = supabase.channel(channelName, {
-        config: { presence: { key: store.participantId } },
-      });
+    const channel = supabase.channel(channelName, {
+      config: { presence: { key: store.participantId } },
+    });
 
-      return new Promise<TogetherRoom>((resolve, reject) => {
-        let isResolved = false;
+    bindPresenceEvents(channel);
 
-        const timeout = setTimeout(() => {
-          if (!isResolved) {
+    return new Promise<TogetherRoom>((resolve, reject) => {
+      let isResolved = false;
+
+      const timeout = setTimeout(() => {
+        if (!isResolved) {
+          supabase.removeChannel(channel);
+          store.setConnectionState("Disconnected");
+          store.setSubscriptionStatus("ERROR");
+          reject(new Error("Room not found or host unreachable. Check the code and try again."));
+        }
+      }, 10000);
+
+      channel
+        .on("presence", { event: "sync" }, () => {
+          const presenceState = channel.presenceState();
+          const keys = Object.keys(presenceState);
+          if (keys.length > 2) {
+            clearTimeout(timeout);
+            isResolved = true;
             supabase.removeChannel(channel);
             store.setConnectionState("Disconnected");
             store.setSubscriptionStatus("ERROR");
-            reject(new Error("Room not found or host unreachable. Check the code and try again."));
+            reject(new Error("This room already has two listeners."));
           }
-        }, 10000);
-
-        channel
-          .on("presence", { event: "sync" }, () => {
-            const presenceState = channel.presenceState();
-            const keys = Object.keys(presenceState);
-            store.setPresenceCount(keys.length);
-            if (keys.length > 2) {
-              clearTimeout(timeout);
-              isResolved = true;
-              supabase.removeChannel(channel);
-              store.setConnectionState("Disconnected");
-              store.setSubscriptionStatus("ERROR");
-              reject(new Error("This room already has two listeners."));
-              return;
-            }
-          })
-          .on("broadcast", { event: "ROOM_STATE" }, ({ payload }) => {
-            if (payload && payload.room && !isResolved) {
-              clearTimeout(timeout);
-              isResolved = true;
-              const room = payload.room as TogetherRoom;
-              store.setRoom(room);
-              store.setIsJoined(true);
-              store.setConnectionState("Connected");
-              store.setSubscriptionStatus("SUBSCRIBED");
-              store.setLastReceivedEvent({ type: "ROOM_STATE", timestamp: Date.now(), payload });
-              activeChannel = channel;
-              subscribeToChannelEvents(channel);
-              applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
-              resolve(room);
-            }
-          })
-          .on("broadcast", { event: "PLAYBACK_STATE" }, ({ payload }) => {
-            if (payload && payload.room && !isResolved) {
-              clearTimeout(timeout);
-              isResolved = true;
-              const room = payload.room as TogetherRoom;
-              store.setRoom(room);
-              store.setIsJoined(true);
-              store.setConnectionState("Connected");
-              store.setSubscriptionStatus("SUBSCRIBED");
-              store.setLastReceivedEvent({ type: "PLAYBACK_STATE", timestamp: Date.now(), payload });
-              activeChannel = channel;
-              subscribeToChannelEvents(channel);
-              applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
-              resolve(room);
-            }
-          })
-          .subscribe((status) => {
-            if (status === "SUBSCRIBED") {
-              store.setSubscriptionStatus("SUBSCRIBED");
-              channel.track({
-                participantId: store.participantId,
-                name: siteConfig.partnerName || "Aaru",
-                role: "GUEST",
-                joinedAt: now,
-              });
-              // Send explicit room state request after subscription is active
-              channel.send({
-                type: "broadcast",
-                event: "REQUEST_ROOM_STATE",
-                payload: { guestId: store.participantId, timestamp: now },
-              });
-              store.setLastSentEvent({ type: "REQUEST_ROOM_STATE", timestamp: now });
-            } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-              store.setSubscriptionStatus("ERROR");
-            }
-          });
-      });
+        })
+        .on("broadcast", { event: "ROOM_STATE" }, ({ payload }) => {
+          if (payload && payload.room && !isResolved) {
+            clearTimeout(timeout);
+            isResolved = true;
+            const room = payload.room as TogetherRoom;
+            store.setRoom(room);
+            store.setIsJoined(true);
+            store.setConnectionState("Connected");
+            store.setSubscriptionStatus("SUBSCRIBED");
+            store.setLastReceivedEvent({ type: "ROOM_STATE", timestamp: Date.now(), payload });
+            activeChannel = channel;
+            subscribeToChannelEvents(channel);
+            applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
+            resolve(room);
+          }
+        })
+        .on("broadcast", { event: "PLAYBACK_STATE" }, ({ payload }) => {
+          if (payload && payload.room && !isResolved) {
+            clearTimeout(timeout);
+            isResolved = true;
+            const room = payload.room as TogetherRoom;
+            store.setRoom(room);
+            store.setIsJoined(true);
+            store.setConnectionState("Connected");
+            store.setSubscriptionStatus("SUBSCRIBED");
+            store.setLastReceivedEvent({ type: "PLAYBACK_STATE", timestamp: Date.now(), payload });
+            activeChannel = channel;
+            subscribeToChannelEvents(channel);
+            applyRemotePlaybackToPlayer(room, payload.timestamp || Date.now());
+            resolve(room);
+          }
+        })
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            store.setSubscriptionStatus("SUBSCRIBED");
+            channel.track({
+              participantId: store.participantId,
+              name: siteConfig.partnerName || "Aaru",
+              role: "GUEST",
+              joinedAt: now,
+            });
+            // Send explicit room state request after subscription is active
+            channel.send({
+              type: "broadcast",
+              event: "REQUEST_ROOM_STATE",
+              payload: { guestId: store.participantId, timestamp: now },
+            });
+            store.setLastSentEvent({ type: "REQUEST_ROOM_STATE", timestamp: now });
+          } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+            store.setSubscriptionStatus("ERROR");
+          }
+        });
+    });
   }
 
   // Development Fallback via BroadcastChannel / LocalStorage
@@ -321,47 +337,42 @@ async function setupRealtimeChannel(code: string, isHost: boolean) {
     });
 
     activeChannel = channel;
+    bindPresenceEvents(channel);
     subscribeToChannelEvents(channel);
 
-      channel
-        .on("presence", { event: "sync" }, () => {
-          const presenceState = channel.presenceState();
-          const count = Object.keys(presenceState).length;
-          store.setPresenceCount(count);
-          store.setGuestConnected(count >= 2);
-        })
-        .on("broadcast", { event: "REQUEST_ROOM_STATE" }, () => {
-          const currentStore = useTogetherStore.getState();
-          const playerState = usePlayerStore.getState();
-          if (currentStore.isHost && currentStore.room) {
-            const now = Date.now();
-            const currentRoomState: TogetherRoom = {
-              ...currentStore.room,
-              currentSongId: playerState.currentSong?.id || currentStore.room.currentSongId,
-              queueIndex: playerState.queueIndex,
-              position: playerState.currentTime,
-              isPlaying: playerState.isPlaying,
-              playbackStartedAt: playerState.isPlaying ? now : null,
-              updatedAt: now,
-            };
-            broadcastEvent("ROOM_STATE", { room: currentRoomState, timestamp: now });
-          }
-        })
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            store.setConnectionState("Connected");
-            store.setSubscriptionStatus("SUBSCRIBED");
-            channel.track({
-              participantId: store.participantId,
-              name: isHost ? siteConfig.hostName || "Heet" : siteConfig.partnerName || "Aaru",
-              role: isHost ? "HOST" : "GUEST",
-              joinedAt: Date.now(),
-            });
-          } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
-            store.setSubscriptionStatus("ERROR");
-          }
-        });
-      return;
+    channel
+      .on("broadcast", { event: "REQUEST_ROOM_STATE" }, () => {
+        const currentStore = useTogetherStore.getState();
+        const playerState = usePlayerStore.getState();
+        if (currentStore.isHost && currentStore.room) {
+          const now = Date.now();
+          const currentRoomState: TogetherRoom = {
+            ...currentStore.room,
+            currentSongId: playerState.currentSong?.id || currentStore.room.currentSongId,
+            queueIndex: playerState.queueIndex,
+            position: playerState.currentTime,
+            isPlaying: playerState.isPlaying,
+            playbackStartedAt: playerState.isPlaying ? now : null,
+            updatedAt: now,
+          };
+          broadcastEvent("ROOM_STATE", { room: currentRoomState, timestamp: now });
+        }
+      })
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          store.setConnectionState("Connected");
+          store.setSubscriptionStatus("SUBSCRIBED");
+          channel.track({
+            participantId: store.participantId,
+            name: isHost ? siteConfig.hostName || "Heet" : siteConfig.partnerName || "Aaru",
+            role: isHost ? "HOST" : "GUEST",
+            joinedAt: Date.now(),
+          });
+        } else if (status === "CLOSED" || status === "CHANNEL_ERROR") {
+          store.setSubscriptionStatus("ERROR");
+        }
+      });
+    return;
   }
 
   // Fallback setup

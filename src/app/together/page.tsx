@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTogetherStore } from "@/store/togetherStore";
 import { createRoom, joinRoom, normalizeRoomCode } from "@/lib/togetherRoom";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { checkIsSupabaseConfigured } from "@/lib/supabase";
 import TogetherPlayer from "@/components/together/TogetherPlayer";
 import { Sparkles, Users, Radio, ArrowRight, Heart, AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,11 @@ function TogetherContent() {
   const [isJoining, setIsJoining] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
+  const [configured, setConfigured] = useState(true);
+
+  useEffect(() => {
+    setConfigured(checkIsSupabaseConfigured());
+  }, []);
 
   useEffect(() => {
     if (roomQuery) {
@@ -94,7 +99,7 @@ function TogetherContent() {
         </div>
 
         {/* Supabase Unconfigured Warning Banner */}
-        {!isSupabaseConfigured && (
+        {!configured && (
           <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3 text-left backdrop-blur-md shadow-md">
             <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="space-y-1">
