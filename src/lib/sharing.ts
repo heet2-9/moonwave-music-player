@@ -53,8 +53,9 @@ export async function shareKaraokeRecording({
         method: "web-share",
         message: "Recording shared successfully!",
       };
-    } catch (err: any) {
-      if (err.name === "AbortError") {
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string };
+      if (errorObj.name === "AbortError") {
         return {
           success: false,
           method: "web-share",

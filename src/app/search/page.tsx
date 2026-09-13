@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
+import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { initialSongs } from "@/data/songs";
 import SongRow from "@/components/music/SongRow";
@@ -8,12 +8,14 @@ import { Search, Music, User, Disc, Sparkles } from "lucide-react";
 
 function SearchContent() {
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") || "";
-  const [query, setQuery] = useState(initialQuery);
+  const paramQuery = searchParams.get("q") || "";
+  const [query, setQuery] = useState(paramQuery);
+  const [prevParamQuery, setPrevParamQuery] = useState(paramQuery);
 
-  useEffect(() => {
-    setQuery(searchParams.get("q") || "");
-  }, [searchParams]);
+  if (paramQuery !== prevParamQuery) {
+    setPrevParamQuery(paramQuery);
+    setQuery(paramQuery);
+  }
 
   const results = useMemo(() => {
     if (!query.trim()) return { songs: [], artists: [], albums: [] };

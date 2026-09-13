@@ -47,7 +47,7 @@ export default function ActiveVoiceCall() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
-        className="fixed top-20 right-4 sm:right-6 z-40 select-none"
+        className="fixed top-16 sm:top-20 right-3 sm:right-6 z-50 select-none max-w-[95vw]"
       >
         {isCallPanelOpen ? (
           /* Expanded Active Call Panel */
@@ -155,20 +155,63 @@ export default function ActiveVoiceCall() {
             </button>
           </div>
         ) : (
-          /* Minimized Call Pill */
-          <button
-            onClick={toggleCallPanel}
-            aria-label="Expand Call Controls"
-            className="flex items-center gap-2 px-3.5 py-2 rounded-full bg-[#0d0d15]/95 border border-pink-500/30 backdrop-blur-2xl shadow-xl shadow-pink-500/20 text-white text-xs font-bold hover:scale-105 transition-all"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <Phone className="w-3.5 h-3.5 text-pink-400" />
-            <span>
-              {remoteParticipantName || "Partner"}
-              {callStatus === "connected" ? ` · ${formatTimer(callDuration)}` : " · Ringing..."}
-            </span>
-            <Maximize2 className="w-3.5 h-3.5 text-zinc-400 ml-1" />
-          </button>
+          /* Minimized Call Floating Bar */
+          <div className="flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-full bg-[#0d0d15]/95 border border-pink-500/30 backdrop-blur-2xl shadow-xl shadow-pink-500/20 text-white text-xs font-bold">
+            <button
+              onClick={toggleCallPanel}
+              aria-label="Expand Call Controls"
+              className="flex items-center gap-2 hover:opacity-90 transition-opacity"
+            >
+              <span
+                className={cn(
+                  "w-2 h-2 rounded-full shrink-0",
+                  callStatus === "connected" ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-ping"
+                )}
+              />
+              <Phone className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+              <span className="truncate max-w-[80px] sm:max-w-[140px]">
+                {remoteParticipantName || "Partner"}
+              </span>
+              <span className="text-pink-300 font-mono text-[11px] shrink-0">
+                {callStatus === "connected" ? formatTimer(callDuration) : "Ringing..."}
+              </span>
+            </button>
+
+            <div className="h-3.5 w-[1px] bg-white/10 mx-0.5 shrink-0" />
+
+            {/* Quick Mute Toggle */}
+            <button
+              onClick={() => toggleMicrophoneMute()}
+              aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+              className={cn(
+                "p-1 rounded-full transition-colors shrink-0",
+                isMuted ? "text-amber-400 hover:bg-amber-500/20" : "text-emerald-400 hover:bg-emerald-500/20"
+              )}
+              title={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted ? <MicOff className="w-3.5 h-3.5" /> : <Mic className="w-3.5 h-3.5" />}
+            </button>
+
+            {/* Quick End Call */}
+            <button
+              onClick={() => cleanupCall(false)}
+              aria-label="End voice call"
+              className="p-1 rounded-full text-rose-400 hover:text-rose-300 hover:bg-rose-500/20 transition-colors shrink-0"
+              title="End Call"
+            >
+              <PhoneOff className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Expand Button */}
+            <button
+              onClick={toggleCallPanel}
+              aria-label="Expand call controls"
+              className="p-1 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors shrink-0"
+              title="Expand"
+            >
+              <Maximize2 className="w-3 h-3" />
+            </button>
+          </div>
         )}
       </motion.div>
     </AnimatePresence>

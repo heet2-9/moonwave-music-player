@@ -144,7 +144,7 @@ export default function KaraokeMixerRecorder({
       throw new Error("Karaoke video player element not found.");
     }
 
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new AudioContextClass();
     }
@@ -325,14 +325,15 @@ export default function KaraokeMixerRecorder({
       setMicConnected(true);
       setStatus("mic_ready");
       console.log("[MOONWAVE] Microphone connected & Web Audio graph active.");
-    } catch (err: any) {
-      console.warn("[MOONWAVE] Microphone permission error:", err);
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+    } catch (err: unknown) {
+      const errorObj = err as { name?: string; message?: string };
+      console.warn("[MOONWAVE] Microphone permission error:", errorObj);
+      if (errorObj.name === "NotAllowedError" || errorObj.name === "PermissionDeniedError") {
         setErrorMessage("Microphone permission was denied. Allow microphone access in your browser settings and try again.");
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      } else if (errorObj.name === "NotFoundError" || errorObj.name === "DevicesNotFoundError") {
         setErrorMessage("No microphone was detected on your system.");
       } else {
-        setErrorMessage(err.message || "Failed to connect microphone.");
+        setErrorMessage(errorObj.message || "Failed to connect microphone.");
       }
       setStatus("error");
     }
@@ -414,9 +415,10 @@ export default function KaraokeMixerRecorder({
       timerRef.current = setInterval(() => {
         setRecordingDuration(useKaraokeStore.getState().recordingDuration + 1);
       }, 1000);
-    } catch (err: any) {
-      console.error("[MOONWAVE] Start recording exception:", err);
-      setErrorMessage(err.message || "Failed to start karaoke recording.");
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      console.error("[MOONWAVE] Start recording exception:", errorObj);
+      setErrorMessage(errorObj.message || "Failed to start karaoke recording.");
       setStatus("error");
       stopMicrophone();
     }

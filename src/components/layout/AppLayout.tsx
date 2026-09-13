@@ -9,6 +9,8 @@ import QueueDrawer from "@/components/player/QueueDrawer";
 import LyricsDrawer from "@/components/player/LyricsDrawer";
 import NowPlayingModal from "@/components/player/NowPlayingModal";
 
+import VoiceCallProvider from "@/components/providers/VoiceCallProvider";
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen w-full bg-[#09090e] text-zinc-100 font-sans overflow-hidden antialiased selection:bg-pink-500 selection:text-white">
@@ -41,6 +43,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <QueueDrawer />
         <LyricsDrawer />
         <NowPlayingModal />
+
+        {/* Global Persistent Voice Call Overlay */}
+        <VoiceCallProvider />
       </div>
     </div>
   );

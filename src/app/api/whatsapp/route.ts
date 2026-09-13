@@ -88,10 +88,11 @@ export async function POST(req: NextRequest) {
       success: true,
       message: `Karaoke recording for "${songTitle}" successfully delivered to ${recipientPhone}!`,
     });
-  } catch (err: any) {
-    console.error("WhatsApp API Route Exception:", err);
+  } catch (err: unknown) {
+    const errorObj = err as Error;
+    console.error("WhatsApp API Route Exception:", errorObj);
     return NextResponse.json(
-      { success: false, error: err.message || "Internal server error." },
+      { success: false, error: errorObj.message || "Internal server error." },
       { status: 500 }
     );
   }

@@ -59,7 +59,7 @@ export default function RecordingPreview({ songTitle, artist }: RecordingPreview
       setCurrentTime(0);
     };
 
-    const handleError = (e: any) => {
+    const handleError = (e: Event) => {
       console.error("[MOONWAVE] Mixed recording playback error:", e);
       setPlaybackError("Failed to decode mixed performance audio.");
       setIsPlaying(false);

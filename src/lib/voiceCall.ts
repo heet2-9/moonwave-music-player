@@ -75,11 +75,13 @@ function startDurationTimer() {
   }
 
   const store = useVoiceCallStore.getState();
-  const startTime = Date.now();
+  const startTime = store.callStartedAt || Date.now();
 
   durationIntervalTimer = setInterval(() => {
-    const duration = Math.floor((Date.now() - startTime) / 1000);
-    store.setCallDuration(duration);
+    const currentStore = useVoiceCallStore.getState();
+    const baseTime = currentStore.callStartedAt || startTime;
+    const duration = Math.floor((Date.now() - baseTime) / 1000);
+    currentStore.setCallDuration(duration);
   }, 1000);
 }
 
@@ -248,9 +250,9 @@ function createPeerConnection(callId: string): RTCPeerConnection {
     if (state === "connected") {
       store.setCallStatus("connected");
       startDurationTimer();
-    } else if (state === "connecting") {
+    } else if (state === "connecting" || state === "disconnected") {
       store.setCallStatus("connecting");
-    } else if (state === "disconnected" || state === "failed") {
+    } else if (state === "failed") {
       cleanupCall(true, "Unable to connect the voice call.");
     } else if (state === "closed") {
       store.setCallStatus("ended");
@@ -270,6 +272,11 @@ export async function initiateCall(): Promise<void> {
 
   const togetherStore = useTogetherStore.getState();
   const voiceStore = useVoiceCallStore.getState();
+
+  // Guard: if call already active/calling, do not create duplicate call
+  if (voiceStore.callStatus !== "idle") {
+    return;
+  }
 
   // 1. Verify partner connected
   if (togetherStore.presenceCount < 2 && !togetherStore.guestConnected) {

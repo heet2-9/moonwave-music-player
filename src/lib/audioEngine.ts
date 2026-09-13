@@ -93,7 +93,7 @@ class AudioEngine {
     }
 
     try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (!AudioCtx) return null;
 
       this.audioContext = new AudioCtx();
@@ -151,6 +151,7 @@ class AudioEngine {
 
   public getFrequencyData(array: Uint8Array): void {
     if (this.analyserNode) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.analyserNode.getByteFrequencyData(array as any);
     }
   }

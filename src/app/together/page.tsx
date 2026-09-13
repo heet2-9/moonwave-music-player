@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTogetherStore } from "@/store/togetherStore";
 import { createRoom, joinRoom, normalizeRoomCode } from "@/lib/togetherRoom";
@@ -19,26 +19,25 @@ function TogetherContent() {
   const [isJoining, setIsJoining] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [activeTab, setActiveTab] = useState<"create" | "join">("create");
-  const [configured, setConfigured] = useState(true);
+  const [configured] = useState(() => checkIsSupabaseConfigured());
+  const [prevRoomQuery, setPrevRoomQuery] = useState(roomQuery);
 
-  useEffect(() => {
-    setConfigured(checkIsSupabaseConfigured());
-  }, []);
-
-  useEffect(() => {
+  if (roomQuery !== prevRoomQuery) {
+    setPrevRoomQuery(roomQuery);
     if (roomQuery) {
       setInputCode(normalizeRoomCode(roomQuery));
       setActiveTab("join");
     }
-  }, [roomQuery]);
+  }
 
   const handleCreate = async () => {
     setIsCreating(true);
     setError(null);
     try {
       await createRoom();
-    } catch (err: any) {
-      setError(err.message || "Failed to create room.");
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setError(errorObj.message || "Failed to create room.");
     } finally {
       setIsCreating(false);
     }
@@ -55,8 +54,9 @@ function TogetherContent() {
     setError(null);
     try {
       await joinRoom(clean);
-    } catch (err: any) {
-      setError(err.message || "Room not found. Check the code and try again.");
+    } catch (err: unknown) {
+      const errorObj = err as Error;
+      setError(errorObj.message || "Room not found. Check the code and try again.");
     } finally {
       setIsJoining(false);
     }

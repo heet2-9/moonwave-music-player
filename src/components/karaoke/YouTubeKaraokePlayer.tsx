@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ExternalLink, VideoOff, Play } from "lucide-react";
 import { Song } from "@/types/music";
 
@@ -18,10 +18,12 @@ interface YouTubeKaraokePlayerProps {
 
 export default function YouTubeKaraokePlayer({ song }: YouTubeKaraokePlayerProps) {
   const [iframeError, setIframeError] = useState(false);
+  const [prevSongId, setPrevSongId] = useState(song.id);
 
-  useEffect(() => {
+  if (song.id !== prevSongId) {
+    setPrevSongId(song.id);
     setIframeError(false);
-  }, [song.id]);
+  }
 
   if (!song.karaokeVideoId) {
     const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
