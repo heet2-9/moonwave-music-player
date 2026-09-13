@@ -209,7 +209,7 @@ export default function TogetherChat() {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="fixed inset-x-3 bottom-3 top-20 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:w-[400px] sm:h-[560px] z-50 flex flex-col rounded-3xl bg-[#0d0d15]/95 border border-white/10 backdrop-blur-2xl shadow-2xl overflow-hidden select-none"
+        className="fixed inset-x-2 bottom-16 top-16 sm:top-auto sm:bottom-6 sm:right-6 sm:left-auto sm:w-[400px] sm:h-[560px] z-50 flex flex-col rounded-3xl bg-[#0d0d15]/95 border border-white/10 backdrop-blur-2xl shadow-2xl overflow-hidden select-none pb-safe"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/10 bg-white/5 backdrop-blur-md shrink-0">

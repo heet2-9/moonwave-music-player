@@ -1,6 +1,7 @@
 import { useVoiceCallStore } from "@/store/voiceCallStore";
 import { useTogetherStore } from "@/store/togetherStore";
 import { siteConfig } from "@/config/site";
+import { startIncomingCallAlert, stopIncomingCallAlert } from "./ringtone";
 
 // Browser capability check helper
 export function checkVoiceCallSupport(): { supported: boolean; reason?: string } {
@@ -97,6 +98,7 @@ function clearCallTimers() {
 // Complete Cleanup
 export function cleanupCall(remoteInitiated = false, reason?: string) {
   clearCallTimers();
+  stopIncomingCallAlert();
 
   // Stop local microphone tracks
   if (localStream) {
@@ -364,6 +366,9 @@ export function handleIncomingCallInvite(payload: {
 
   store.receiveCall(payload.callerId, payload.callerName, payload.callId);
 
+  // Start Ringtone & Vibration
+  startIncomingCallAlert(payload.callId);
+
   // Set 30-second incoming call timeout
   if (callTimeoutTimer) clearTimeout(callTimeoutTimer);
   callTimeoutTimer = setTimeout(() => {
@@ -382,6 +387,7 @@ export async function acceptIncomingCall(): Promise<void> {
   if (!callId || voiceStore.callStatus !== "incoming") return;
 
   clearCallTimers();
+  stopIncomingCallAlert();
   voiceStore.acceptCall();
 
   try {
@@ -448,6 +454,7 @@ export async function acceptIncomingCall(): Promise<void> {
 
 // DECLINE INCOMING CALL
 export function declineIncomingCall(): void {
+  stopIncomingCallAlert();
   const store = useVoiceCallStore.getState();
   const localId = useTogetherStore.getState().participantId;
   const callId = store.callId;
