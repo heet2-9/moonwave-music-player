@@ -10,7 +10,9 @@ import { leaveRoom, setSharedControls, updatePlaybackState } from "@/lib/togethe
 import { audioEngine } from "@/lib/audioEngine";
 import TogetherReactions from "./TogetherReactions";
 import TogetherChat from "./TogetherChat";
+import TogetherVoiceCall from "./TogetherVoiceCall";
 import IncomingMessageToast from "./IncomingMessageToast";
+import { useVoiceCallStore } from "@/store/voiceCallStore";
 import {
   Play,
   Pause,
@@ -26,6 +28,7 @@ import {
   Volume2,
   VolumeX,
   MessageSquare,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +42,8 @@ export default function TogetherPlayer() {
     setAutoplayBlocked,
     presenceCount,
   } = useTogetherStore();
+
+  const { callStatus } = useVoiceCallStore();
 
   const { isChatOpen, toggleChatOpen, unreadCount } = useTogetherChatStore();
 
@@ -297,6 +302,12 @@ export default function TogetherPlayer() {
         <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-pink-500/20 via-purple-500/20 to-indigo-500/20 border border-pink-500/30 text-pink-300 text-xs font-bold shadow-md">
           <Radio className="w-3.5 h-3.5 animate-pulse text-pink-400" />
           <span>LISTENING TOGETHER</span>
+          {callStatus === "connected" && (
+            <span className="ml-1 flex items-center gap-1 text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30 animate-pulse">
+              <Phone className="w-2.5 h-2.5" />
+              VOICE ACTIVE
+            </span>
+          )}
         </div>
 
         {/* Album Artwork */}
@@ -462,6 +473,9 @@ export default function TogetherPlayer() {
 
       {/* Incoming Message Notification Toast */}
       <IncomingMessageToast />
+
+      {/* Real-time Voice Call Overlay */}
+      <TogetherVoiceCall />
 
       {/* Real-time Chat Panel */}
       <TogetherChat />

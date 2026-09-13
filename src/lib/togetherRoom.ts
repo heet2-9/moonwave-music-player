@@ -6,6 +6,15 @@ import { initialSongs } from "@/data/songs";
 import { Song } from "@/types/music";
 import { siteConfig } from "@/config/site";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import {
+  setVoiceCallSignalingSender,
+  handleIncomingCallInvite,
+  handleIncomingOffer,
+  handleIncomingAnswer,
+  handleIncomingIceCandidate,
+  handleIncomingDeclineOrEnd,
+  cleanupCall,
+} from "./voiceCall";
 
 // Unambiguous Alphanumeric Chars (avoiding 0, O, 1, I)
 const CODE_CHARS = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
@@ -215,6 +224,9 @@ export function leaveRoom(): void {
   const store = useTogetherStore.getState();
   const room = store.room;
 
+  // Clean up any ongoing voice call & microphone stream when leaving room
+  cleanupCall(false, "Room left");
+
   if (activeChannel) {
     if (store.isHost && room) {
       activeChannel.send({
@@ -369,6 +381,9 @@ function broadcastEvent(event: string, payload: Record<string, unknown>) {
   }
 }
 
+// Bind signaling sender to Voice Call engine
+setVoiceCallSignalingSender(broadcastEvent);
+
 async function setupRealtimeChannel(code: string, isHost: boolean) {
   const store = useTogetherStore.getState();
   const supabase = getSupabaseClient();
@@ -458,6 +473,7 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
       }
     })
     .on("broadcast", { event: "HOST_LEAVING" }, () => {
+      cleanupCall(true, "Partner left the room.");
       if (!store.isHost) {
         store.setIsHost(true);
         store.setRole("host");
@@ -476,6 +492,36 @@ function subscribeToChannelEvents(channel: RealtimeChannel) {
     .on("broadcast", { event: "CHAT_SEEN" }, ({ payload }) => {
       if (payload) {
         handleIncomingSeenEvent(payload);
+      }
+    })
+    .on("broadcast", { event: "CALL_INVITE" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingCallInvite(payload as { callId: string; callerId: string; callerName: string; timestamp: number });
+      }
+    })
+    .on("broadcast", { event: "CALL_DECLINE" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingDeclineOrEnd(payload as { callId: string; senderId: string; reason?: string });
+      }
+    })
+    .on("broadcast", { event: "WEBRTC_OFFER" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingOffer(payload as { callId: string; senderId: string; offer: RTCSessionDescriptionInit });
+      }
+    })
+    .on("broadcast", { event: "WEBRTC_ANSWER" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingAnswer(payload as { callId: string; senderId: string; answer: RTCSessionDescriptionInit });
+      }
+    })
+    .on("broadcast", { event: "ICE_CANDIDATE" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingIceCandidate(payload as { callId: string; senderId: string; candidate: RTCIceCandidateInit });
+      }
+    })
+    .on("broadcast", { event: "CALL_END" }, ({ payload }) => {
+      if (payload) {
+        handleIncomingDeclineOrEnd(payload as { callId: string; senderId: string; reason?: string });
       }
     });
 }
@@ -504,6 +550,7 @@ function setupFallbackChannel(code: string) {
       store.setSharedControls(data.sharedControls);
     } else if (data.type === "leave") {
       if (data.participantId !== store.participantId) {
+        cleanupCall(true, "Partner left the room.");
         store.setGuestConnected(false);
       }
     } else if (data.type === "CHAT_MESSAGE") {
@@ -512,6 +559,18 @@ function setupFallbackChannel(code: string) {
       handleIncomingTypingEvent(data);
     } else if (data.type === "CHAT_SEEN") {
       handleIncomingSeenEvent(data);
+    } else if (data.type === "CALL_INVITE") {
+      handleIncomingCallInvite(data);
+    } else if (data.type === "CALL_DECLINE") {
+      handleIncomingDeclineOrEnd(data);
+    } else if (data.type === "WEBRTC_OFFER") {
+      handleIncomingOffer(data);
+    } else if (data.type === "WEBRTC_ANSWER") {
+      handleIncomingAnswer(data);
+    } else if (data.type === "ICE_CANDIDATE") {
+      handleIncomingIceCandidate(data);
+    } else if (data.type === "CALL_END") {
+      handleIncomingDeclineOrEnd(data);
     }
   };
 }

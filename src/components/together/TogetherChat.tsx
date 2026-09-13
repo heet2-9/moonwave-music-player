@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useTogetherStore } from "@/store/togetherStore";
 import { useTogetherChatStore } from "@/store/togetherChatStore";
+import { useVoiceCallStore } from "@/store/voiceCallStore";
+import { initiateCall } from "@/lib/voiceCall";
 import { sendReaction, sendTypingSignal, sendReadReceipt } from "@/lib/togetherRoom";
 import { siteConfig } from "@/config/site";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,6 +14,7 @@ import {
   Send,
   ArrowDown,
   Radio,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -29,7 +32,11 @@ export default function TogetherChat() {
     typingParticipantName,
   } = useTogetherChatStore();
 
-  const { isHost, participantId, connectionState, room } = useTogetherStore();
+  const { isHost, participantId, connectionState, room, presenceCount, guestConnected } = useTogetherStore();
+  const { callStatus } = useVoiceCallStore();
+
+  const isPartnerPresent = presenceCount >= 2 || guestConnected;
+  const isCallActive = callStatus === "calling" || callStatus === "connecting" || callStatus === "connected";
 
   const partnerName = isHost
     ? siteConfig.partnerName || "Aaru"
@@ -218,6 +225,11 @@ export default function TogetherChat() {
                 <span className="px-2 py-0.5 text-[9px] font-mono font-bold rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/30">
                   {room?.code || "ROOM"}
                 </span>
+                {isCallActive && (
+                  <span className="px-2 py-0.5 text-[9px] font-extrabold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 animate-pulse">
+                    VOICE CALL ACTIVE
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-1.5 text-[11px]">
                 {connectionState === "Connected" ? (
@@ -235,13 +247,44 @@ export default function TogetherChat() {
             </div>
           </div>
 
-          <button
-            onClick={() => setChatOpen(false)}
-            aria-label="Close Chat"
-            className="p-1.5 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => initiateCall()}
+              disabled={!isPartnerPresent || isCallActive}
+              aria-label={
+                !isPartnerPresent
+                  ? "Your partner needs to join first."
+                  : isCallActive
+                  ? "Voice call active"
+                  : `Start voice call with ${partnerName}`
+              }
+              title={
+                !isPartnerPresent
+                  ? "Your partner needs to join first."
+                  : isCallActive
+                  ? "Voice call active"
+                  : `Call ${partnerName}`
+              }
+              className={cn(
+                "p-2 rounded-xl transition-all flex items-center justify-center border",
+                isCallActive
+                  ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-300"
+                  : isPartnerPresent
+                  ? "bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border-pink-500/30 text-pink-300 hover:text-white shadow-sm"
+                  : "bg-white/5 border-white/5 text-zinc-600 cursor-not-allowed opacity-50"
+              )}
+            >
+              <Phone className="w-4 h-4" />
+            </button>
+
+            <button
+              onClick={() => setChatOpen(false)}
+              aria-label="Close Chat"
+              className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Message Area */}
